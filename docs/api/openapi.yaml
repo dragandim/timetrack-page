@@ -10,7 +10,7 @@ info:
     url: http://www.visidra.com
     email: dragan@visidra.com
 servers:
-  - url: https://timetracks-api.visidra.com/api/v2
+  - url: https://timetracks-api.visidra.com/api/v1
     description: Production server
 tags:
   - name: Account
