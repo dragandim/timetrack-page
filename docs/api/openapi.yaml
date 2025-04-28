@@ -6,18 +6,17 @@ info:
   license:
     name: Visidra
   contact:
-    name: Dragan
+    name: Dragan Dimitrijevic
     url: http://www.visidra.com
     email: dragan@visidra.com
 servers:
-  - url: https://timetracker.visidra.com/api/v2
+  - url: https://timetracks-api.visidra.com/api/v2
     description: Production server
-  - url: https://timetracker-stg.visidra.com/api/v2
-    description: Staging environment
 tags:
   - name: Account
   - name: User
   - name: Task
+  - name: Project
   - name: TimeTrack
   - name: Organisation
   - name: Invitation
@@ -53,7 +52,7 @@ paths:
           description: Bad request (e.g., invalid input)
         '409':
           description: Conflict (e.g., email or organization already exists)
-  /user:
+  /users:
     get:
       summary: Get all Users
       operationId: getUsers
@@ -63,6 +62,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/user-list'
+  /user:
     post:
       summary: Create a new User
       operationId: createUser
@@ -75,8 +75,10 @@ paths:
         '201':
           $ref: '#/components/responses/user-created'
         '400':
-          description: Invalid input
-  /user/{id}:
+          $ref: '#/components/responses/bad-request'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /user/{userId}:
     get:
       summary: Get User by ID
       operationId: getUser
@@ -89,7 +91,7 @@ paths:
         '200':
           $ref: '#/components/responses/user'
         '404':
-          description: User not found
+          $ref: '#/components/responses/not-found'
     put:
       summary: Update a User by ID
       operationId: updateUser
@@ -120,7 +122,7 @@ paths:
           description: User deleted
         '404':
           description: User not found
-  /users/{id}/password:
+  /user/{userId}/password:
     put:
       tags:
         - User
@@ -140,7 +142,7 @@ paths:
           $ref: '#/components/responses/forbidden'
         '500':
           $ref: '#/components/responses/server-error'
-  /users/{id}/password/reset:
+  /user/{userId}/password/reset:
     put:
       summary: Reset user password by admin
       description: Allows an admin to reset a user's password.
@@ -160,6 +162,16 @@ paths:
           $ref: '#/components/responses/forbidden'
         '500':
           $ref: '#/components/responses/server-error'
+  /tasks:
+    get:
+      summary: Get all Tasks
+      operationId: getTasks
+      description: Retrieves all tasks.
+      tags:
+        - Task
+      responses:
+        '200':
+          $ref: '#/components/responses/task-list'
   /task:
     post:
       summary: Create a new Task
@@ -174,16 +186,7 @@ paths:
           $ref: '#/components/responses/task-created'
         '400':
           description: Invalid input
-    get:
-      summary: Get all Tasks
-      operationId: getTasks
-      description: Retrieves all tasks.
-      tags:
-        - Task
-      responses:
-        '200':
-          $ref: '#/components/responses/task-list'
-  /task/{id}:
+  /task/{taskId}:
     get:
       summary: Get Task by ID
       operationId: getTask
@@ -227,9 +230,201 @@ paths:
           description: Task deleted
         '404':
           description: Task not found
-  /timetrack:
+  /projects:
+    get:
+      summary: Get all Projects
+      operationId: getProjects
+      description: Retrieves all projects.
+      tags:
+        - Project
+      responses:
+        '200':
+          $ref: '#/components/responses/project-list'
+  /project:
     post:
-      summary: Create a new TimeTrack
+      summary: Create a new Project
+      operationId: createProject
+      description: Creates a new project entry.
+      tags:
+        - Project
+      requestBody:
+        $ref: '#/components/requestBodies/project-create'
+      responses:
+        '201':
+          $ref: '#/components/responses/project-created'
+        '400':
+          description: Invalid input
+  /project{projectId}:
+    get:
+      summary: Get Project by ID
+      operationId: getProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/project'
+        '404':
+          description: Project not found
+    put:
+      summary: Update a Project
+      operationId: updateProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+      requestBody:
+        $ref: '#/components/requestBodies/project-update'
+      responses:
+        '200':
+          $ref: '#/components/responses/project-updated'
+        '404':
+          description: Project not found
+    delete:
+      summary: Delete a Project
+      operationId: deleteProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+      responses:
+        '204':
+          description: Project deleted
+        '404':
+          description: Project not found
+  /project{projectId}/tasks:
+    get:
+      summary: Get all Tasks under a Project
+      operationId: getProjectTasks
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/task-list'
+  /project{projectId}/task:
+    post:
+      summary: Add (create) a new Task to a Project
+      operationId: addTaskToProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+      requestBody:
+        $ref: '#/components/requestBodies/task-create'
+      responses:
+        '201':
+          $ref: '#/components/responses/task-created'
+  /project/{projectId}/task/{taskId}/move:
+    post:
+      summary: Move a Task to another Project
+      operationId: moveTaskToProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+        - $ref: '#/components/parameters/task-id'
+      requestBody:
+        $ref: '#/components/requestBodies/project-move-task'
+      responses:
+        '200':
+          $ref: '#/components/responses/task-updated'
+  /project/{projectId}/task/{taskId}:
+    delete:
+      summary: Remove Task from Project
+      operationId: removeTaskFromProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+        - $ref: '#/components/parameters/task-id'
+      responses:
+        '204':
+          description: Task removed
+        '404':
+          description: Task not found
+  /project/{projectId}/task/{taskId}/detach:
+    post:
+      summary: Detach a Task from a Project
+      operationId: detachTaskFromProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+        - $ref: '#/components/parameters/task-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/task-updated'
+        '404':
+          description: Task not found
+  /project/{projectId}/task/{taskId}/attach:
+    post:
+      summary: Attach an existing Task to a Project
+      operationId: attachTaskToProject
+      tags:
+        - Project
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+        - $ref: '#/components/parameters/task-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/task-updated'
+        '404':
+          description: Task or Project not found
+  /task/{taskId}/clockin:
+    post:
+      summary: Clock in using a task ID
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/task-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/timetrack-clockin-response'
+  /task/{taskId}/clockout:
+    post:
+      summary: Clock out using a task ID
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/task-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/timetrack-clockout-response'
+  /task/clockin/name/{name}:
+    post:
+      summary: Clock in using task name
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/task-name'
+      responses:
+        '200':
+          $ref: '#/components/responses/timetrack-clockin-name-response'
+  /task/clockin/ref/{referenceId}:
+    post:
+      summary: Clock in using reference ID
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/task-referenceid'
+      responses:
+        '200':
+          $ref: '#/components/responses/timetrack-clockin-referenceid-response'
+  /task/{taskId}/tracks:
+    get:
+      summary: Get all TimeTracks under task ID
+      operationId: getTracks
+      tags:
+        - TimeTrack
+      responses:
+        '200':
+          $ref: '#/components/responses/timetrack-list'
+  /task/{taskId}/track:
+    post:
+      summary: Create a new TimeTrack under task ID
       operationId: createTimeTrack
       description: Creates a new time tracking entry.
       tags:
@@ -241,21 +436,27 @@ paths:
           $ref: '#/components/responses/timetrack-created'
         '400':
           description: Invalid input
+  /task/{taskId}track/{trackId}:
     get:
-      summary: Get all TimeTracks
-      operationId: getTracks
-      tags:
-        - TimeTrack
-      responses:
-        '200':
-          $ref: '#/components/responses/timetrack-list'
-  /timetrack/{id}:
-    get:
-      summary: Get a TimeTrack by ID
+      summary: Get a TimeTrack under task ID
       operationId: getTimeTrack
       tags:
         - TimeTrack
       parameters:
+        - $ref: '#/components/parameters/task-id'
+        - $ref: '#/components/parameters/timetrack-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/timetrack-get'
+        '404':
+          description: TimeTrack not found
+    put:
+      summary: Update a TimeTrack under task ID
+      operationId: updateTimeTrack
+      tags:
+        - TimeTrack
+      parameters:
+        - $ref: '#/components/parameters/task-id'
         - $ref: '#/components/parameters/timetrack-id'
       responses:
         '200':
@@ -263,61 +464,33 @@ paths:
         '404':
           description: TimeTrack not found
     delete:
-      summary: Delete a TimeTrack by ID
+      summary: Delete a TimeTrack under task ID
       operationId: deleteTimeTrack
       tags:
         - TimeTrack
       parameters:
+        - $ref: '#/components/parameters/task-id'
         - $ref: '#/components/parameters/timetrack-id'
       responses:
         '204':
           description: Successfully deleted
         '404':
           description: TimeTrack not found
-  /timetrack/clockin/{id}:
+  /invitations:
     get:
-      summary: Clock in using a task ID
+      summary: Get all Invitations
+      operationId: getInvitations
+      description: Retrieves all invitation.
       tags:
-        - TimeTrack
-      parameters:
-        - $ref: '#/components/parameters/timetrack-id'
+        - Invitation
       responses:
         '200':
-          $ref: '#/components/responses/timetrack-clockin-response'
-  /timetrack/clockout/{id}:
-    get:
-      summary: Clock out using a task ID
-      tags:
-        - TimeTrack
-      parameters:
-        - $ref: '#/components/parameters/timetrack-id'
-      responses:
-        '200':
-          $ref: '#/components/responses/timetrack-clockout-response'
-  /timetrack/clockin/name/{name}:
-    post:
-      summary: Clock in using task name
-      tags:
-        - TimeTrack
-      parameters:
-        - $ref: '#/components/parameters/task-name'
-      responses:
-        '200':
-          $ref: '#/components/responses/timetrack-clockin-name-response'
-  /timetrack/clockin/referenceid/{referenceid}:
-    post:
-      summary: Clock in using reference ID
-      tags:
-        - TimeTrack
-      parameters:
-        - $ref: '#/components/parameters/task-referenceid'
-      responses:
-        '200':
-          $ref: '#/components/responses/timetrack-clockin-referenceid-response'
+          $ref: '#/components/responses/invitation-list'
   /invitation:
     post:
       summary: Create a new invitation for user signup
       operationId: createInvitation
+      description: Creates a new invitation entry.
       tags:
         - Invitation
       requestBody:
@@ -329,7 +502,7 @@ paths:
           $ref: '#/components/responses/bad-request'
         '500':
           $ref: '#/components/responses/server-error'
-  /invitation/{id}:
+  /invitation/{invId}:
     get:
       summary: Get an invitation by ID
       operationId: getInvitation
@@ -339,24 +512,12 @@ paths:
         - $ref: '#/components/parameters/invitation-id'
       responses:
         '200':
-          description: Invitation found successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/invitation-get'
+          $ref: '#/components/responses/invitation'
         '404':
-          description: Invitation not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/not-found'
+          $ref: '#/components/responses/not-found'
         '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/server-error'
-  /invitation/{id}/signup:
+          $ref: '#/components/responses/server-error'
+  /invitation/{invId}/signup:
     get:
       summary: Signup a user using an invitation
       operationId: signupInvitation
@@ -450,24 +611,24 @@ paths:
 components:
   parameters:
     user-id:
-      name: id
+      name: userId
       in: path
       required: true
       description: The ID of the user
       schema:
         type: string
     task-id:
-      name: id
+      name: taskId
       in: path
       required: true
       description: The ID of the task
       schema:
         type: string
-    timetrack-id:
-      name: id
+    project-id:
+      name: projectId
       in: path
       required: true
-      description: The ID of the TimeTrack
+      description: ID of the Project
       schema:
         type: string
     task-name:
@@ -486,14 +647,21 @@ components:
       schema:
         type: string
         example: JIRA-492
+    timetrack-id:
+      name: trackId
+      in: path
+      required: true
+      description: The ID of the TimeTrack
+      schema:
+        type: string
     invitation-id:
-      name: id
+      name: invId
       in: path
       required: true
       description: The unique ID of the invitation
       schema:
         type: string
-        example: '12345'
+        example: 0001-0001-00001
     org-id:
       name: id
       in: path
@@ -695,6 +863,34 @@ components:
           type: string
           format: date-time
           example: '2025-06-01T10:00:00Z'
+    project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: Design Homepage
+        description:
+          type: string
+          example: Create a new homepage design
+        status:
+          type: string
+          enum:
+            - open
+            - in-progress
+            - done
+        userId:
+          type: string
+        orgId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-04-22T09:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
     timetrack:
       type: object
       properties:
@@ -728,40 +924,28 @@ components:
         - taskId
         - userId
         - startTime
-    invitation-get:
+    invitation:
       type: object
       properties:
         id:
           type: string
-          description: The ID of the invitation
-          example: '12345'
+          example: QEFf93fjap
         email:
           type: string
           format: email
-          description: The email of the invited user
-          example: user@example.com
+          example: john.doe@example.com
         expiresAt:
           type: string
           format: date-time
-          description: The date and time when the invitation expires
-          example: '2025-04-23T10:00:00Z'
-    not-found:
-      type: object
-      properties:
-        message:
+          example: '2025-04-22T10:00:00Z'
+        createdAt:
           type: string
-          description: Error message
-          example: Item not found
-    server-error:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Something went wrong
+          format: date-time
+          example: '2025-04-22T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-04-22T10:00:00Z'
     signup-success:
       type: object
       properties:
@@ -792,6 +976,23 @@ components:
               message:
                 type: string
                 example: Invalid request data
+    not-found:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: Item not found
+    server-error:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Something went wrong
     org-create:
       type: object
       required:
@@ -889,12 +1090,39 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/user'
+    bad-request:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Invalid request data
+    server-error:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Something went wrong
     user:
       description: A single User object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/user'
+    not-found:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: Item not found
     user-updated:
       description: Successfully updated User
       content:
@@ -911,16 +1139,6 @@ components:
               message:
                 type: string
                 example: Password updated successfully
-    bad-request:
-      description: Bad request
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Invalid request data
     forbidden:
       description: Forbidden
       content:
@@ -931,16 +1149,6 @@ components:
               message:
                 type: string
                 example: Unauthorized to for this operation
-    server-error:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Something went wrong
     password-reset-success:
       content:
         application/json:
@@ -976,26 +1184,32 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/task'
-    timetrack-list:
-      description: A list of TimeTrack entries
+    project-list:
+      description: List of all Projects
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/timetrack'
-    timetrack-created:
-      description: Successfully created TimeTrack
+              $ref: '#/components/schemas/project'
+    project-created:
+      description: Successfully created Project
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/timetrack'
-    timetrack-get:
-      description: Successfully fetched TimeTrack
+            $ref: '#/components/schemas/project'
+    project:
+      description: A single Project object
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/timetrack'
+            $ref: '#/components/schemas/project'
+    project-updated:
+      description: Successfully updated Project
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/project'
     timetrack-clockin-response:
       description: Successfully clocked in
       content:
@@ -1020,18 +1234,46 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/timetrack'
-    invitation-created:
+    timetrack-list:
+      description: A list of TimeTrack entries
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Invitation created successfully.
-              invitationId:
-                type: uuid
-                example: abc123
+            type: array
+            items:
+              $ref: '#/components/schemas/timetrack'
+    timetrack-created:
+      description: Successfully created TimeTrack
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/timetrack'
+    timetrack-get:
+      description: Successfully fetched TimeTrack
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/timetrack'
+    invitation-list:
+      description: List of all Users
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/invitation'
+    invitation-created:
+      description: Created invitation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/invitation'
+    invitation:
+      description: A single Invitation object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/invitation'
     org-created:
       description: Successfully created Organisation
       content:
@@ -1050,13 +1292,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/org'
-    not-found:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Error message
-          example: Item not found
     ServerError:
       $ref: '#/components/responses/server-error'
     NotFound:
@@ -1134,6 +1369,49 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/task-update'
+    project-create:
+      description: Project object that needs to be created
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+                example: New Project
+              description:
+                type: string
+                example: Project description
+    project-update:
+      description: Project object that needs to be updated
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Updated Project Name
+              description:
+                type: string
+                example: Updated description for the project
+    project-move-task:
+      description: Object containing task move information
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - projectId
+            properties:
+              projectId:
+                type: string
+                example: proj-456
     timetrack-create:
       description: Create a new TimeTrack entry
       required: true
@@ -1144,12 +1422,14 @@ components:
             properties:
               taskId:
                 type: string
-              startTime:
-                type: string
-                format: date-time
-              endTime:
-                type: string
-                format: date-time
+              start:
+                type: integer
+                format: int64
+                description: Unix timestamp in milliseconds (UTC)
+              end:
+                type: integer
+                format: int64
+                description: Unix timestamp in milliseconds (UTC)
     invitation-create:
       description: Invitation object that needs to be created
       content:
