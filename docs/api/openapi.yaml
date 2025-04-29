@@ -1,14 +1,18 @@
 openapi: 3.0.0
 info:
   version: 1.0.0
-  title: TimeTrack API - Chronology
-  description: This is a specification for time tracking API
+  title: TimeTracks API
+  description: |
+    TimeTrack API is a headless solution for versatile time tracking
   license:
-    name: Visidra
+    name: visidra.com
   contact:
     name: Dragan Dimitrijevic
     url: http://www.visidra.com
     email: dragan@visidra.com
+  x-logo:
+    url: https://timetracks.visidra.com/api/logo.png
+    altText: TimeTracks logo
 servers:
   - url: https://timetracks-api.visidra.com/api/v1
     description: Production server
@@ -20,6 +24,7 @@ tags:
   - name: TimeTrack
   - name: Organisation
   - name: Invitation
+  - name: Report
 paths:
   /login:
     post:
@@ -373,6 +378,47 @@ paths:
           $ref: '#/components/responses/task-updated'
         '404':
           description: Task or Project not found
+  /report/task/{taskId}:
+    get:
+      summary: Get Task Report
+      operationId: getTaskReport
+      tags:
+        - Report
+      parameters:
+        - $ref: '#/components/parameters/task-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/report-task'
+        '404':
+          description: Task not found
+  /report/project/{projectId}:
+    get:
+      summary: Get Project Report
+      operationId: getProjectReport
+      tags:
+        - Report
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/report-project'
+        '404':
+          description: Project not found
+  /report/user/{userId}:
+    get:
+      summary: Get User Report
+      operationId: getUserReport
+      tags:
+        - Report
+      parameters:
+        - $ref: '#/components/parameters/user-id'
+        - $ref: '#/components/parameters/start-date'
+        - $ref: '#/components/parameters/end-date'
+      responses:
+        '200':
+          $ref: '#/components/responses/report-user'
+        '404':
+          description: User not found
   /task/{taskId}/clockin:
     post:
       summary: Clock in using a task ID
@@ -631,6 +677,26 @@ components:
       description: ID of the Project
       schema:
         type: string
+    start-date:
+      name: startDate
+      in: query
+      description: |
+        Start of the time range (inclusive), in UNIX milliseconds.
+        The range between startDate and endDate must not exceed 7 days.
+      required: false
+      schema:
+        type: integer
+        example: 1714521600000
+    end-date:
+      name: endDate
+      in: query
+      description: |
+        End of the time range (inclusive), in UNIX milliseconds.
+        The range between startDate and endDate must not exceed 7 days.
+      required: false
+      schema:
+        type: integer
+        example: 1715039999999
     task-name:
       name: name
       in: path
@@ -891,6 +957,137 @@ components:
         updatedAt:
           type: string
           format: date-time
+    report-time:
+      type: object
+      properties:
+        hours:
+          type: integer
+        minutes:
+          type: integer
+        seconds:
+          type: integer
+    report-user-breakdown:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            projectId:
+              type: string
+            projectName:
+              type: string
+            total:
+              type: integer
+              description: Time tracked in this project (milliseconds)
+            timeFormatted:
+              type: string
+              description: Human-readable string, e.g. "2h 45m 15s"
+          required:
+            - projectId
+            - projectName
+            - total
+            - timeFormatted
+    report-task:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            taskId:
+              type: string
+            taskName:
+              type: string
+            taskDescription:
+              type: string
+            timeFormatted:
+              type: string
+              description: Human-readable formatted time string, e.g. "4h 10m 10s"
+            total:
+              type: integer
+            users:
+              type: array
+              items:
+                $ref: '#/components/schemas/report-user-breakdown'
+    report-project-breakdown:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            userId:
+              type: string
+            firstName:
+              type: string
+            lastName:
+              type: string
+            total:
+              type: integer
+              description: Time tracked by this user (in milliseconds)
+            timeFormatted:
+              type: string
+              description: Human-readable formatted time string
+          required:
+            - userId
+            - firstName
+            - lastName
+            - total
+            - timeFormatted
+    report-project:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            projectId:
+              type: string
+            projectName:
+              type: string
+            projectDescription:
+              type: string
+              nullable: true
+            total:
+              type: integer
+              description: Total time in milliseconds
+            timeFormatted:
+              type: string
+              description: Human-readable formatted time string, e.g. "4h 10m 10s"
+            users:
+              type: array
+              items:
+                $ref: '#/components/schemas/report-project-breakdown'
+          required:
+            - projectId
+            - projectName
+            - total
+            - timeFormatted
+            - userBreakdown
+    report-user:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            userId:
+              type: string
+            userName:
+              type: string
+            total:
+              type: integer
+              description: Total time tracked in milliseconds
+            timeFormatted:
+              type: string
+              description: Human-readable formatted time string, e.g. "4h 30m 00s"
+            projects:
+              type: array
+              description: Time tracked per project
+              items:
+                $ref: '#/components/schemas/report-user-breakdown'
+          required:
+            - userId
+            - userName
+            - total
+            - timeFormatted
+            - projects
     timetrack:
       type: object
       properties:
@@ -1210,6 +1407,24 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/project'
+    report-task:
+      description: Successful Task Report
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/report-task'
+    report-project:
+      description: Successful Project Report
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/report-project'
+    report-user:
+      description: Successful Project Report
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/report-user'
     timetrack-clockin-response:
       description: Successfully clocked in
       content:
