@@ -18,30 +18,33 @@ servers:
     description: Production server
 tags:
   - name: Account
-  - name: User
-  - name: Task
-  - name: Project
-  - name: TimeTrack
+    description: |
+      Endpoints related to user authentication and account management, including signup, login, token refresh, and invitation-based registration.
   - name: Organisation
+    description: |
+      Endpoints for creating and managing organisations, including access to organisation details, user membership, and administrative actions.
+  - name: User
+    description: |
+      Endpoints for managing user accounts within an organisation, including listing users, updating user details, and resetting passwords.
+  - name: Project
+    description: |
+      Endpoints for creating and managing projects, which group related tasks and time tracking entries under a shared context.
+  - name: Task
+    description: |
+      Endpoints for managing individual tasks, including creation, time tracking, project assignment, and status management.
+  - name: TimeTrack
+    description: |
+      Endpoints for recording and retrieving time tracking entries for tasks, including clock-in, clock-out, and duration reporting.
   - name: Invitation
+    description: |
+      Endpoints for managing user invitations, including creating signup links and handling one-time invitation-based account registration. (Optional: may be grouped under Account)
   - name: Report
+    description: |
+      Endpoints intended for internal use only. Access is restricted to super users with elevated permissions. These operations are not available to regular organisation members.
+  - name: Internal
+    description: |
+      Restricted endpoints intended for administrative use only, accessible to super users.
 paths:
-  /login:
-    post:
-      summary: User Login
-      operationId: loginUser
-      description: Logs in a user and returns an authentication token (JWT).
-      tags:
-        - Account
-      requestBody:
-        $ref: '#/components/requestBodies/login'
-      responses:
-        '200':
-          $ref: '#/components/responses/login-success'
-        '400':
-          $ref: '#/components/responses/login-failure'
-        '401':
-          $ref: '#/components/responses/login-failure'
   /signup:
     post:
       summary: Signup a new user and organisation
@@ -52,26 +55,108 @@ paths:
         $ref: '#/components/requestBodies/signup-request'
       responses:
         '201':
-          $ref: '#/components/responses/signup-response'
+          $ref: '#/components/responses/signup-201'
         '400':
-          description: Bad request (e.g., invalid input)
+          $ref: '#/components/responses/signup-400'
         '409':
-          description: Conflict (e.g., email or organization already exists)
+          $ref: '#/components/responses/signup-409'
+  /login:
+    post:
+      summary: Login with long-lived token
+      operationId: loginUser
+      description: Authenticates the user and returns a long-lived JWT along with a refresh token, enabling continuous access without frequent re-authentication.
+      tags:
+        - Account
+      requestBody:
+        $ref: '#/components/requestBodies/login'
+      responses:
+        '200':
+          $ref: '#/components/responses/login-200'
+        '400':
+          $ref: '#/components/responses/login-400'
+        '401':
+          $ref: '#/components/responses/login-401'
+  /refresh:
+    post:
+      summary: Rotate long-lived refresh token
+      operationId: refreshLongSession
+      description: The JWT access token is valid for 1 day, and the refresh token expires after 7 days.
+      tags:
+        - Account
+      requestBody:
+        $ref: '#/components/requestBodies/refresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/refresh-200'
+        '401':
+          $ref: '#/components/responses/refresh-401'
+  /token/login:
+    post:
+      summary: Login with short-lived token
+      description: Logs in a user and returns a short-lived JWT along with a refresh token. Intended for programmatic access such as CLI tools, scripts, or temporary sessions requiring frequent token rotation.
+      operationId: tokenLogin
+      tags:
+        - Account
+      requestBody:
+        required: true
+        $ref: '#/components/requestBodies/login'
+      responses:
+        '200':
+          $ref: '#/components/responses/login-200'
+        '400':
+          $ref: '#/components/responses/login-400'
+        '401':
+          $ref: '#/components/responses/login-401'
+  /token/refresh:
+    post:
+      summary: Rotate short-term refresh token
+      description: JWT token TTL is 15 minutes and refresh token TTL of 1 day.
+      operationId: refreshShortSession
+      tags:
+        - Account
+      requestBody:
+        $ref: '#/components/requestBodies/refresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/refresh-200'
+        '401':
+          $ref: '#/components/responses/refresh-401'
+  /sessions:
+    get:
+      summary: List all active sessions for the authenticated user
+      operationId: listSessions
+      security:
+        - bearerAuth: []
+      tags:
+        - Account
+      responses:
+        '200':
+          $ref: '#/components/responses/session-list'
+        '401':
+          $ref: '#/components/responses/session-401'
   /users:
     get:
-      summary: Get all Users
+      summary: Get all users
       operationId: getUsers
-      description: Retrieves all users.
+      description: Retrieves all users under your organisation
+      security:
+        - bearerAuth: []
       tags:
         - User
       responses:
         '200':
           $ref: '#/components/responses/user-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /user:
     post:
-      summary: Create a new User
+      summary: Create a new user
       operationId: createUser
-      description: Creates a new user entry.
+      description: Creates a new user entry
+      security:
+        - bearerAuth: []
       tags:
         - User
       requestBody:
@@ -81,13 +166,17 @@ paths:
           $ref: '#/components/responses/user-created'
         '400':
           $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
   /user/{userId}:
     get:
-      summary: Get User by ID
+      summary: Get user by ID
       operationId: getUser
       description: Retrieves a user by their ID.
+      security:
+        - bearerAuth: []
       tags:
         - User
       parameters:
@@ -95,12 +184,18 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/user'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
           $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     put:
-      summary: Update a User by ID
+      summary: Update a user by ID
       operationId: updateUser
       description: Updates a user's details.
+      security:
+        - bearerAuth: []
       tags:
         - User
       parameters:
@@ -111,22 +206,32 @@ paths:
         '200':
           $ref: '#/components/responses/user-updated'
         '400':
-          description: Invalid input
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: User not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     delete:
-      summary: Delete a User by ID
+      summary: Delete a user by ID
       operationId: deleteUser
       description: Deletes a user by their ID.
+      security:
+        - bearerAuth: []
       tags:
         - User
       parameters:
         - $ref: '#/components/parameters/user-id'
       responses:
         '204':
-          description: User deleted
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: User not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /user/{userId}/password:
     put:
       tags:
@@ -134,6 +239,8 @@ paths:
       summary: Update user password
       description: Allows a user to update their own password.
       operationId: updateUserPassword
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/user-id'
       requestBody:
@@ -142,7 +249,7 @@ paths:
         '200':
           $ref: '#/components/responses/user-password-updated'
         '400':
-          $ref: '#/components/responses/bad-request'
+          $ref: '#/components/responses/signup-400'
         '403':
           $ref: '#/components/responses/forbidden'
         '500':
@@ -151,9 +258,11 @@ paths:
     put:
       summary: Reset user password by admin
       description: Allows an admin to reset a user's password.
+      operationId: resetUserPasswordByAdmin
+      security:
+        - bearerAuth: []
       tags:
         - User
-      operationId: resetUserPasswordByAdmin
       parameters:
         - $ref: '#/components/parameters/user-id'
       requestBody:
@@ -169,19 +278,27 @@ paths:
           $ref: '#/components/responses/server-error'
   /tasks:
     get:
-      summary: Get all Tasks
+      summary: Get all tasks
+      description: Retrieves all tasks
       operationId: getTasks
-      description: Retrieves all tasks.
+      security:
+        - bearerAuth: []
       tags:
         - Task
       responses:
         '200':
           $ref: '#/components/responses/task-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task:
     post:
-      summary: Create a new Task
+      summary: Create a new task
       operationId: createTask
       description: Creates a new task entry.
+      security:
+        - bearerAuth: []
       tags:
         - Task
       requestBody:
@@ -190,12 +307,18 @@ paths:
         '201':
           $ref: '#/components/responses/task-created'
         '400':
-          description: Invalid input
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task/{taskId}:
     get:
-      summary: Get Task by ID
-      operationId: getTask
+      summary: Get task by ID
       description: Retrieves a task by its ID.
+      operationId: getTask
+      security:
+        - bearerAuth: []
       tags:
         - Task
       parameters:
@@ -203,12 +326,18 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/task'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Task not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     put:
-      summary: Update a Task by ID
+      summary: Update a task by ID
+      description: Updates a task's details
       operationId: updateTask
-      description: Updates a task's details.
+      security:
+        - bearerAuth: []
       tags:
         - Task
       parameters:
@@ -219,37 +348,55 @@ paths:
         '200':
           $ref: '#/components/responses/task-updated'
         '400':
-          description: Invalid input
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Task not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     delete:
-      summary: Delete a Task by ID
-      operationId: deleteTask
+      summary: Delete a task by ID
       description: Deletes a task by its ID.
+      operationId: deleteTask
+      security:
+        - bearerAuth: []
       tags:
         - Task
       parameters:
         - $ref: '#/components/parameters/task-id'
       responses:
         '204':
-          description: Task deleted
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Task not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /projects:
     get:
-      summary: Get all Projects
-      operationId: getProjects
+      summary: Get all projects
       description: Retrieves all projects.
+      operationId: getProjects
+      security:
+        - bearerAuth: []
       tags:
         - Project
       responses:
         '200':
           $ref: '#/components/responses/project-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project:
     post:
-      summary: Create a new Project
+      summary: Create a new project
       operationId: createProject
       description: Creates a new project entry.
+      security:
+        - bearerAuth: []
       tags:
         - Project
       requestBody:
@@ -258,11 +405,18 @@ paths:
         '201':
           $ref: '#/components/responses/project-created'
         '400':
-          description: Invalid input
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project{projectId}:
     get:
-      summary: Get Project by ID
+      summary: Get project by ID
+      description: Retrieves a project by its ID.
       operationId: getProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -270,11 +424,18 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/project'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Project not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     put:
-      summary: Update a Project
+      summary: Update a project
+      description: Updates a project's details.
       operationId: updateProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -284,24 +445,40 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/project-updated'
+        '400':
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Project not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     delete:
-      summary: Delete a Project
+      summary: Delete a project
+      description: Deletes a project by its ID
       operationId: deleteProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
         - $ref: '#/components/parameters/project-id'
       responses:
         '204':
-          description: Project deleted
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Project not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project{projectId}/tasks:
     get:
-      summary: Get all Tasks under a Project
+      summary: Get all tasks by project ID
+      description: Retrieve all tasks associated with a specific project.
       operationId: getProjectTasks
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -309,10 +486,19 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/task-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project{projectId}/task:
     post:
-      summary: Add (create) a new Task to a Project
+      summary: Create a new task to a specific project.
+      description: Adds a new task and assigns it to the specified project by project ID.
       operationId: addTaskToProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -322,10 +508,21 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/task-created'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project/{projectId}/task/{taskId}/move:
     post:
-      summary: Move a Task to another Project
+      summary: Move a task to another project
+      description: |
+        Updates the task's project association by assigning it to a different project.
+        This operation is useful for reorganizing tasks across projects without modifying the task content.
       operationId: moveTaskToProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -336,10 +533,21 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/task-updated'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project/{projectId}/task/{taskId}:
     delete:
-      summary: Remove Task from Project
+      summary: Remove task from project
+      description: |
+        Permanently deletes a task from the specified project.
+        This operation cannot be undone and will remove the task and its time tracking data entirely.
       operationId: removeTaskFromProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -347,13 +555,21 @@ paths:
         - $ref: '#/components/parameters/task-id'
       responses:
         '204':
-          description: Task removed
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Task not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project/{projectId}/task/{taskId}/detach:
     post:
-      summary: Detach a Task from a Project
+      summary: Detach task from a project
+      description: |
+        Removes the association between the task and its project, but keeps the task and its data intact.
       operationId: detachTaskFromProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -362,12 +578,21 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/task-updated'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Task not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /project/{projectId}/task/{taskId}/attach:
     post:
-      summary: Attach an existing Task to a Project
+      summary: Attach an existing task to a project
+      description: |
+        Associates an existing standalone task with the specified project.
+        This operation updates the task's project reference without modifying other task data.
       operationId: attachTaskToProject
+      security:
+        - bearerAuth: []
       tags:
         - Project
       parameters:
@@ -376,38 +601,83 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/task-updated'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Task or Project not found
-  /report/task/{taskId}:
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /report/task/{taskId}/user-breakdown:
     get:
-      summary: Get Task Report
+      summary: Get task report with user breakdown
+      description: |
+        Retrieves a detailed time tracking report for a specific task, including total tracked time, user-by-user breakdown, and related time entries.
       operationId: getTaskReport
+      security:
+        - bearerAuth: []
       tags:
         - Report
       parameters:
         - $ref: '#/components/parameters/task-id'
       responses:
         '200':
-          $ref: '#/components/responses/report-task'
+          $ref: '#/components/responses/report-task-user-breakdown'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Task not found
-  /report/project/{projectId}:
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /report/project/{projectId}/user-breakdown:
     get:
-      summary: Get Project Report
-      operationId: getProjectReport
+      summary: Get project report user breakdown
+      description: |
+        Retrieves a time tracking report for a specific project, including a breakdown of total time tracked by each user across all associated tasks.
+      operationId: getProjectUserBreakdownReport
+      security:
+        - bearerAuth: []
       tags:
         - Report
       parameters:
         - $ref: '#/components/parameters/project-id'
       responses:
         '200':
-          $ref: '#/components/responses/report-project'
+          $ref: '#/components/responses/report-project-user-breakdown'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Project not found
-  /report/user/{userId}:
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /report/project/{projectId}/task-breakdown:
     get:
-      summary: Get User Report
+      summary: Get project report with task breakdown
+      description: |
+        Retrieves a time tracking report for a specific project, including a breakdown of total time tracked for each task within the project. Useful for understanding how time is distributed across tasks regardless of user.
+      operationId: getProjectTaskBreakdownReport
+      security:
+        - bearerAuth: []
+      tags:
+        - Report
+      parameters:
+        - $ref: '#/components/parameters/project-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/report-project-task-breakdown'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /report/user/{userId}/project:
+    get:
+      summary: Get user report with project breakdown
+      description: |
+        Retrieves a time tracking report for a specific user, including a project-level breakdown with all associated tasks and time tracked within each. Useful for reviewing a user's activity across multiple projects over a given time range.
       operationId: getUserReport
+      security:
+        - bearerAuth: []
       tags:
         - Report
       parameters:
@@ -417,21 +687,37 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/report-user'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: User not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task/{taskId}/clockin:
     post:
       summary: Clock in using a task ID
+      description: Starts time tracking for task ID
       tags:
         - Task
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/task-id'
       responses:
         '200':
           $ref: '#/components/responses/timetrack-clockin-response'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task/{taskId}/clockout:
     post:
       summary: Clock out using a task ID
+      description: Ends time tracking for task ID.
+      security:
+        - bearerAuth: []
       tags:
         - Task
       parameters:
@@ -439,9 +725,16 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/timetrack-clockout-response'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task/clockin/name/{name}:
     post:
       summary: Clock in using task name
+      description: Starts time tracking using task name. If tasks does not exist, it gets created first
+      security:
+        - bearerAuth: []
       tags:
         - Task
       parameters:
@@ -449,30 +742,56 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/timetrack-clockin-name-response'
-  /task/clockin/ref/{referenceId}:
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /task/clockin/ref/{externalId}:
     post:
-      summary: Clock in using reference ID
+      summary: Clock in using external ID
+      description: Starts time tracking using external ID. This ID typically comes from an integrated third-party project management system such as Jira, Trello, Asana, or GitHub. If tasks does not exists, it gets created first
+      security:
+        - bearerAuth: []
       tags:
         - Task
       parameters:
-        - $ref: '#/components/parameters/task-referenceid'
+        - $ref: '#/components/parameters/task-externalid'
       responses:
         '200':
-          $ref: '#/components/responses/timetrack-clockin-referenceid-response'
+          $ref: '#/components/responses/timetrack-clockin-externalid-response'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task/{taskId}/tracks:
     get:
-      summary: Get all TimeTracks under task ID
+      summary: Get all time tracks under task ID
+      description: |
+        Retrieves all time tracking entries associated with the specified task.
+        Useful for reporting, auditing, or displaying time spent on a specific task.
       operationId: getTracks
+      security:
+        - bearerAuth: []
       tags:
         - TimeTrack
       responses:
         '200':
           $ref: '#/components/responses/timetrack-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task/{taskId}/track:
     post:
-      summary: Create a new TimeTrack under task ID
+      summary: Create a new time track under task ID
+      description: |
+        Starts a new time tracking entry for the specified task.
+        Records the start time and, optionally, the end time if provided.
       operationId: createTimeTrack
-      description: Creates a new time tracking entry.
+      security:
+        - bearerAuth: []
       tags:
         - TimeTrack
       requestBody:
@@ -481,11 +800,22 @@ paths:
         '201':
           $ref: '#/components/responses/timetrack-created'
         '400':
-          description: Invalid input
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task/{taskId}track/{trackId}:
     get:
-      summary: Get a TimeTrack under task ID
+      summary: Get a time track under task ID
+      description: |
+        Retrieves a specific time tracking entry associated with the given task ID and time track ID.
+        Useful for viewing detailed time tracking information for a single entry.
       operationId: getTimeTrack
+      security:
+        - bearerAuth: []
       tags:
         - TimeTrack
       parameters:
@@ -494,11 +824,20 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/timetrack-get'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: TimeTrack not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     put:
-      summary: Update a TimeTrack under task ID
+      summary: Update a time track under task ID
+      description: |
+        Modifies an existing time tracking entry associated with the specified task.
+        Typically used to set or adjust the end time, duration, or correct tracking errors.
       operationId: updateTimeTrack
+      security:
+        - bearerAuth: []
       tags:
         - TimeTrack
       parameters:
@@ -510,8 +849,13 @@ paths:
         '404':
           description: TimeTrack not found
     delete:
-      summary: Delete a TimeTrack under task ID
+      summary: Delete a time track under task ID
+      description: |
+        Permanently removes a specific time tracking entry associated with the given task.
+        This action cannot be und
       operationId: deleteTimeTrack
+      security:
+        - bearerAuth: []
       tags:
         - TimeTrack
       parameters:
@@ -519,24 +863,38 @@ paths:
         - $ref: '#/components/parameters/timetrack-id'
       responses:
         '204':
-          description: Successfully deleted
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: TimeTrack not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
   /invitations:
     get:
-      summary: Get all Invitations
+      summary: Get all invitations
+      description: Retrieves all invitations under your organisation
       operationId: getInvitations
-      description: Retrieves all invitation.
+      security:
+        - bearerAuth: []
       tags:
         - Invitation
       responses:
         '200':
           $ref: '#/components/responses/invitation-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /invitation:
     post:
       summary: Create a new invitation for user signup
+      description: |
+        Creates a new invitation for a user to join the organisation.
+        The invitation includes a one-time signup link that expires after 1 day.
       operationId: createInvitation
-      description: Creates a new invitation entry.
+      security:
+        - bearerAuth: []
       tags:
         - Invitation
       requestBody:
@@ -551,7 +909,12 @@ paths:
   /invitation/{invId}:
     get:
       summary: Get an invitation by ID
+      description: |
+        Retrieves an invitation by its ID, including the email and expiration details.
+        Typically used to validate and display invitation information before signup.
       operationId: getInvitation
+      security:
+        - bearerAuth: []
       tags:
         - Invitation
       parameters:
@@ -559,62 +922,100 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/invitation'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+    delete:
+      summary: Delete an invitation
+      description: |
+        Deletes a pending invitation by its ID. This operation is typically used to revoke access before the invitation is accepted. Only valid for invitations that have not yet been used or expired.
+      tags:
+        - Invitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/invitation-id'
+      responses:
+        '204':
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
           $ref: '#/components/responses/not-found'
         '500':
           $ref: '#/components/responses/server-error'
   /invitation/{invId}/signup:
-    get:
+    post:
       summary: Signup a user using an invitation
+      description: |
+        Completes the signup process for an invited user using a one-time invitation link.
+        Creates the user account and removes the invitation if it is valid and not expired.
       operationId: signupInvitation
+      security:
+        - bearerAuth: []
       tags:
-        - Invitation
-      parameters:
-        - $ref: '#/components/parameters/invitation-id'
+        - Account
+      requestBody:
+        $ref: '#/components/requestBodies/user-create'
+      responses:
+        '201':
+          $ref: '#/components/responses/user-created'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /orgs:
+    get:
+      summary: Get all organisations
+      description: |
+        Retrieves allorganisation. Access to this endpoint is restricted to users with the `super` role.
+        Regular users should use the signup endpoint to create their own organisation.
+      operationId: getOrganisations
+      security:
+        - bearerAuth: []
+      tags:
+        - Internal
       responses:
         '200':
-          description: User successfully signed up
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/signup-success'
-        '400':
-          description: Invalid data or missing information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bad-request'
-        '404':
-          description: Invitation not found or expired
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/not-found'
+          $ref: '#/components/responses/org'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/server-error'
+          $ref: '#/components/responses/server-error'
   /org:
     post:
-      summary: Create a new Organisation
+      summary: Create a new organisation
+      description: |
+        Creates a new organisation. Access to this endpoint is restricted to users with the `super` role.
+        Regular users should use the signup endpoint to create their own organisation.
       operationId: createOrganisation
-      description: Creates a new organisation.
+      security:
+        - bearerAuth: []
       tags:
-        - Organisation
+        - Internal
       requestBody:
         $ref: '#/components/requestBodies/org-create'
       responses:
         '201':
           $ref: '#/components/responses/org-created'
         '400':
-          description: Invalid input
-  /org/{id}:
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /org/{orgId}:
     get:
-      summary: Get Organisation by ID
-      operationId: getOrganisation
+      summary: Get organisation by ID
       description: Retrieves an organisation by its ID.
+      operationId: getOrganisation
+      security:
+        - bearerAuth: []
       tags:
         - Organisation
       parameters:
@@ -622,12 +1023,18 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/org'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Organisation not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     put:
-      summary: Update Organisation by ID
+      summary: Update organisation by ID
       operationId: updateOrganisation
       description: Updates an organisation's details.
+      security:
+        - bearerAuth: []
       tags:
         - Organisation
       parameters:
@@ -638,155 +1045,238 @@ paths:
         '200':
           $ref: '#/components/responses/org-updated'
         '400':
-          description: Invalid input
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Organisation not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
     delete:
-      summary: Delete Organisation by ID
-      operationId: deleteOrganisation
+      summary: Delete organisation by ID
       description: Deletes an organisation by its ID.
+      operationId: deleteOrganisation
+      security:
+        - bearerAuth: []
       tags:
         - Organisation
       parameters:
         - $ref: '#/components/parameters/org-id'
       responses:
         '204':
-          description: Organisation deleted
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '404':
-          description: Organisation not found
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
 components:
-  parameters:
-    user-id:
-      name: userId
-      in: path
-      required: true
-      description: The ID of the user
-      schema:
-        type: string
-    task-id:
-      name: taskId
-      in: path
-      required: true
-      description: The ID of the task
-      schema:
-        type: string
-    project-id:
-      name: projectId
-      in: path
-      required: true
-      description: ID of the Project
-      schema:
-        type: string
-    start-date:
-      name: startDate
-      in: query
-      description: |
-        Start of the time range (inclusive), in UNIX milliseconds.
-        The range between startDate and endDate must not exceed 7 days.
-      required: false
-      schema:
-        type: integer
-        example: 1714521600000
-    end-date:
-      name: endDate
-      in: query
-      description: |
-        End of the time range (inclusive), in UNIX milliseconds.
-        The range between startDate and endDate must not exceed 7 days.
-      required: false
-      schema:
-        type: integer
-        example: 1715039999999
-    task-name:
-      name: name
-      in: path
-      required: true
-      description: Name of the task to clock in
-      schema:
-        type: string
-        example: Write API Documentation
-    task-referenceid:
-      name: referenceid
-      in: path
-      required: true
-      description: The reference ID of the task to clock into
-      schema:
-        type: string
-        example: JIRA-492
-    timetrack-id:
-      name: trackId
-      in: path
-      required: true
-      description: The ID of the TimeTrack
-      schema:
-        type: string
-    invitation-id:
-      name: invId
-      in: path
-      required: true
-      description: The unique ID of the invitation
-      schema:
-        type: string
-        example: 0001-0001-00001
-    org-id:
-      name: id
-      in: path
-      required: true
-      description: The ID of the organisation
-      schema:
-        type: string
-    userId:
-      name: userId
-      in: path
-      required: true
-      description: The id of the User to retrieve
-      schema:
-        type: integer
-    limit:
-      name: limit
-      in: query
-      description: How many items to return at one time (max 100)
-      required: false
-      schema:
-        type: integer
-        format: int32
-    offset:
-      name: offset
-      in: query
-      description: Defines the offset and its used in conjuction with limit query parameter
-      required: false
-      schema:
-        type: integer
-        format: int32
-  schemas:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  requestBodies:
+    signup-request:
+      description: Signup required field
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+                description: The email of the user to signup
+              firstName:
+                type: string
+                format: email
+                description: The first name of the user to signup
+              lastName:
+                type: string
+                format: email
+                description: The last name the user to signup
+              password:
+                type: string
+                description: The password of the user
+              orgName:
+                type: string
+                description: The name of the organisation the users belong to
+            required:
+              - email
+              - password
+              - firstName
+              - lastName
+              - orgName
     login:
-      type: object
-      required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-          format: email
-          example: user@visidra.com
-        password:
-          type: string
-          format: password
-          example: password123
+      description: Login credentials (email and password)
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/login-credentials'
+    refresh:
+      description: Refresh token
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/refresh'
+    user-create:
+      description: User object that needs to be created
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/user-create'
+    user-update:
+      description: User object that needs to be updated
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/user-update'
+    user-update-password:
+      description: Object that updates password
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/user-update-password'
+    user-reset-password:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - expiresAt
+            properties:
+              expiresAt:
+                type: string
+                format: date-time
+                description: The new expiration date in ISO_8601 format.
+                example: '2025-04-30T00:00:00Z'
+    task-create:
+      description: Task object that needs to be created
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/task-create'
+    task-update:
+      description: Task object that needs to be updated
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/task-update'
+    project-create:
+      description: Project object that needs to be created
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+                example: New e-commerce shop
+              description:
+                type: string
+                example: Few months with NestJS and Vue
+              externalId:
+                type: string
+                example: JIRA-102
+    project-update:
+      description: Project object that needs to be updated
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/project-update'
+    project-move-task:
+      description: Object containing task move information
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - projectId
+            properties:
+              projectId:
+                type: string
+                example: I9a2f9f13Aq
+    timetrack-create:
+      description: Create a new time track entry
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              start:
+                type: integer
+                format: int64
+                description: Unix timestamp in milliseconds (UTC)
+              end:
+                type: integer
+                format: int64
+                description: Unix timestamp in milliseconds (UTC)
+            required:
+              - start
+    invitation-create:
+      description: Invitation object that needs to be created
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+            properties:
+              email:
+                type: string
+                format: email
+                description: The email of the user being invited.
+                example: john.doe@example.com
+    org-create:
+      description: Organisation object that needs to be created
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/org-create'
+    org-update:
+      description: Organisation object that needs to be updated
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/org-update'
+  schemas:
     User:
       type: object
       properties:
         id:
           type: string
-          example: user-123
-        first:
+          example: Q2fspaa93Ad
+        firstName:
           type: string
-        last:
+          example: Doug
+        lastName:
           type: string
+          example: John
         email:
           type: string
           format: email
           example: john.doe@example.com
+        role:
+          type: string
+          example: member
         createdAt:
           type: string
           format: date-time
@@ -800,12 +1290,20 @@ components:
       properties:
         id:
           type: string
-          example: org-123
+          example: Os2fe92ja9EA
         name:
           type: string
           example: Visidra
         decription:
           type: string
+          description: Optional general description of the organisation.
+        email:
+          type: string
+          format: email
+          nullable: false
+          description: |
+            Optional contact email for the organisation. Used for general communication or administrative purposes.
+          example: contact@visidra.com
         createdAt:
           type: string
           format: date-time
@@ -814,20 +1312,87 @@ components:
           type: string
           format: date-time
           example: '2025-04-22T10:00:00Z'
+    login-credentials:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@visidra.com
+        password:
+          type: string
+          format: password
+          example: password123
+    login:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: your.jwt.token.here
+        refreshToken:
+          type: string
+          example: your.jwt.token.here
+        expiresIn:
+          type: integer
+          format: int64
+          example: 1714586400000
+    message:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Response message
+          example: Response message
+    refresh:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          required:
+            - refreshToken
+    session:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 9vjaæ38f9w
+        userId:
+          type: string
+          example: 9vjaæ38f9w
+        sessionStartedAt:
+          type: integer
+          format: int64
+          example: 1714500000000
+        expiresAt:
+          type: integer
+          format: int64
+          example: 1714586400000
+        userAgent:
+          type: string
+          example: Mozilla/5.0
     user:
       type: object
       properties:
         id:
           type: string
-          example: user-123
-        first:
+          example: Q2fspaa93Ad
+        firstName:
           type: string
-        last:
+          example: Doug
+        lastName:
           type: string
+          example: John
         email:
           type: string
           format: email
           example: john.doe@example.com
+        role:
+          type: string
+          example: member
         createdAt:
           type: string
           format: date-time
@@ -842,30 +1407,38 @@ components:
         - username
         - email
         - password
+        - role
       properties:
-        username:
+        firstName:
           type: string
-          example: john_doe
+          example: John
+        lastName:
+          type: string
+          example: Doe
         email:
           type: string
           format: email
           example: john.doe@example.com
-        password:
+        role:
           type: string
-          example: strongpassword123
+          enum:
+            - member
+            - admin
+          example: member
+          description: The user's role within the organization.
     user-update:
       type: object
       properties:
-        username:
+        firstName:
           type: string
-          example: john_doe_updated
+          example: Doug
+        lastName:
+          type: string
+          example: John
         email:
           type: string
           format: email
-          example: john.doe.updated@example.com
-        password:
-          type: string
-          example: newstrongpassword123
+          example: john.doe@example.com
     user-update-password:
       type: object
       required:
@@ -881,17 +1454,29 @@ components:
       properties:
         id:
           type: string
-          example: task-123
+          example: 398fa3ov3
+        userId:
+          type: string
+          example: Q2fspaa93Ad
         name:
           type: string
-          example: Design Homepage
+          example: New website design
         description:
           type: string
-          example: Create a new homepage design
-        dueDate:
+          example: Create a new homepage using React
+        status:
           type: string
-          format: date-time
-          example: '2025-05-01T10:00:00Z'
+          enum:
+            - open
+            - tracking
+          example: open
+          description: The status shows stask activity
+        projectId:
+          type: string
+          readOnly: true
+          nullable: false
+          description: |
+            The ID of the project this task belongs to, if any. Omitted when the task is not assigned to a project.
         createdAt:
           type: string
           format: date-time
@@ -904,52 +1489,45 @@ components:
       type: object
       required:
         - name
+      properties:
+        name:
+          type: string
+          example: New website design
+        description:
+          type: string
+          example: Create a new homepage using React
+    task-update:
+      type: object
+      required:
+        - name
         - description
       properties:
         name:
           type: string
-          example: Design Homepage
+          example: New website design
         description:
           type: string
-          example: Create a new homepage design
-        dueDate:
-          type: string
-          format: date-time
-          example: '2025-05-01T10:00:00Z'
-    task-update:
-      type: object
-      properties:
-        name:
-          type: string
-          example: Updated Task Name
-        description:
-          type: string
-          example: Updated description for the task
-        dueDate:
-          type: string
-          format: date-time
-          example: '2025-06-01T10:00:00Z'
+          example: Create a new homepage using React
     project:
       type: object
       properties:
         id:
           type: string
-        name:
-          type: string
-          example: Design Homepage
-        description:
-          type: string
-          example: Create a new homepage design
-        status:
-          type: string
-          enum:
-            - open
-            - in-progress
-            - done
+          example: E9a9f9f93Aq
         userId:
           type: string
-        orgId:
+          example: Q2fspaa93Ad
+        name:
           type: string
+          example: New e-commerce system
+        description:
+          type: string
+          example: Few months with NestJS and Vue
+          description: Optional field for detailed description
+        externalId:
+          type: string
+          example: JIRA-102
+          description: Optional external reference id
         createdAt:
           type: string
           format: date-time
@@ -957,15 +1535,29 @@ components:
         updatedAt:
           type: string
           format: date-time
+    project-update:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: New e-commerce system
+        description:
+          type: string
+          example: Few months with NestJS and Vue
     report-time:
       type: object
       properties:
         hours:
           type: integer
+          example: 4
         minutes:
           type: integer
+          example: 10
         seconds:
           type: integer
+          example: 10
     report-user-breakdown:
       type: object
       allOf:
@@ -979,6 +1571,7 @@ components:
             total:
               type: integer
               description: Time tracked in this project (milliseconds)
+              example: 1914100000000
             timeFormatted:
               type: string
               description: Human-readable string, e.g. "2h 45m 15s"
@@ -997,13 +1590,18 @@ components:
               type: string
             taskName:
               type: string
+              example: New website design
             taskDescription:
               type: string
+              example: Create a new homepage using React
             timeFormatted:
               type: string
               description: Human-readable formatted time string, e.g. "4h 10m 10s"
+              example: 4h 10m 10s
             total:
               type: integer
+              format: int64
+              example: 1712100000000
             users:
               type: array
               items:
@@ -1061,6 +1659,58 @@ components:
             - total
             - timeFormatted
             - userBreakdown
+    report-task-breakdown:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            taskId:
+              type: string
+            taskName:
+              type: string
+            taskDescription:
+              type: string
+            total:
+              type: integer
+              description: Time tracked by this user (in milliseconds)
+            timeFormatted:
+              type: string
+              description: Human-readable formatted time string
+          required:
+            - taskId
+            - taskName
+            - total
+            - timeFormatted
+    report-project-task-breakdown:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            projectId:
+              type: string
+            projectName:
+              type: string
+            projectDescription:
+              type: string
+              nullable: true
+            total:
+              type: integer
+              description: Total time in milliseconds
+            timeFormatted:
+              type: string
+              description: Human-readable formatted time string, e.g. "4h 10m 10s"
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/report-task-breakdown'
+          required:
+            - projectId
+            - projectName
+            - total
+            - timeFormatted
+            - tasks
     report-user:
       type: object
       allOf:
@@ -1093,7 +1743,7 @@ components:
       properties:
         id:
           type: string
-          example: abc123
+          example: 398fa3ov3
         taskId:
           type: string
           example: task789
@@ -1104,10 +1754,31 @@ components:
           type: string
           format: date-time
           example: '2025-04-22T14:00:00Z'
+          description: Human-readable ISO 8601 version of the start timestamp (UNIX ms).
         endTime:
           type: string
           format: date-time
           example: '2025-04-22T15:30:00Z'
+          description: Human-readable ISO 8601 version of the start timestamp (UNIX ms).
+        start:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+        end:
+          type: integer
+          format: int64
+          example: 1714580000000
+          description: End time of the time track in UNIX milliseconds
+        amount:
+          type: integer
+          format: int64
+          example: 1714500000000
+          description: Total tracked duration in milliseconds, calculated as the difference between end and start.
+        timeFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the amount field.
         createdAt:
           type: string
           format: date-time
@@ -1116,11 +1787,6 @@ components:
           type: string
           format: date-time
           example: '2025-04-22T15:35:00Z'
-      required:
-        - id
-        - taskId
-        - userId
-        - startTime
     invitation:
       type: object
       properties:
@@ -1143,72 +1809,24 @@ components:
           type: string
           format: date-time
           example: '2025-04-22T10:00:00Z'
-    signup-success:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Success message
-          example: User successfully signed up
-        signupLink:
-          type: string
-          description: Signup link that can be clicked only once
-          example: https://app.timetrack.com/invitation/invite:0001-0001-00001/signup
-        temporaryPassword:
-          type: string
-          description: A temporary password provided to the user that must be updated during the first login for security purposes.
-          example: p4sw0rd_qw3rty
-        expiresAt:
-          type: string
-          format: date-time
-          description: The date and time when the invitation expires
-          example: '2025-04-23T10:00:00Z'
-    bad-request:
-      description: Bad request
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Invalid request data
-    not-found:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Error message
-          example: Item not found
-    server-error:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Something went wrong
     org-create:
       type: object
       required:
         - name
-        - email
       properties:
         name:
           type: string
           example: Visidra
+        decription:
+          type: string
+          description: Optional general description of the organisation.
         email:
           type: string
           format: email
+          nullable: false
+          description: |
+            Optional contact email for the organisation. Used for general communication or administrative purposes.
           example: contact@visidra.com
-        address:
-          type: string
-          example: 123 Business St, Tech City
-        phoneNumber:
-          type: string
-          example: '+1234567890'
     org-update:
       type: object
       properties:
@@ -1222,35 +1840,65 @@ components:
         description:
           type: string
           example: 456 New Address Rd, Tech City
-    error:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-          example: An unexpected error occurred
-        code:
-          type: integer
-          example: 500
-        details:
-          type: string
-          example: Stack trace or additional context if available
-    Error:
-      $ref: '#/components/schemas/error'
   responses:
-    login-success:
+    signup-201:
+      description: Successfully registered user and organisation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: User and organisation registered successfully
+                description: Organisation and admin user created successfully
+              user:
+                $ref: '#/components/schemas/User'
+              org:
+                $ref: '#/components/schemas/org'
+    signup-400:
+      description: Bad request (e.g., invalid input)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: Missing required fields or invalid password
+              details:
+                type: array
+                items:
+                  type: string
+                description: Optional list of validation issues
+                example:
+                  - Must include one uppercase letter
+                  - Must include one lowercase letter
+                  - Must include one number
+    signup-409:
+      description: Conflict (e.g., email or organisation already exists)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: Organisation already exists
+    login-200:
       description: Successfully logged in and returned a JWT token
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              token:
-                type: string
-                example: your.jwt.token.here
-    login-failure:
-      description: Failed login attempt due to invalid credentials
+            $ref: '#/components/schemas/login'
+    login-400:
+      description: Missing required fields
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
+    login-401:
+      description: Unauthorized attempt due to invalid credentials
       content:
         application/json:
           schema:
@@ -1258,21 +1906,33 @@ components:
             properties:
               message:
                 type: string
-                example: Invalid email or password.
-    signup-response:
-      description: Successfully registered user and organization
+                description: Invalid email or password
+    refresh-200:
+      description: Successfully refreshed JWT tokens
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: User and organization registered successfully
-              user:
-                $ref: '#/components/schemas/User'
-              organization:
-                $ref: '#/components/schemas/org'
+            $ref: '#/components/schemas/login'
+    refresh-401:
+      description: Unauthorized attempt due to invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
+    session-list:
+      description: List of all Sessions
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/session'
+    session-401:
+      description: Unauthorized attempt
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
     user-list:
       description: List of all Users
       content:
@@ -1281,6 +1941,18 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/user'
+    unauthorized:
+      description: Unauthorized attempt
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
+    server-error:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
     user-created:
       description: Successfully created User
       content:
@@ -1292,21 +1964,7 @@ components:
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Invalid request data
-    server-error:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Something went wrong
+            $ref: '#/components/schemas/message'
     user:
       description: A single User object
       content:
@@ -1314,18 +1972,23 @@ components:
           schema:
             $ref: '#/components/schemas/user'
     not-found:
-      type: object
-      properties:
-        message:
-          type: string
-          description: Error message
-          example: Item not found
+      description: Item not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
     user-updated:
       description: Successfully updated User
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/user'
+    item-deleted:
+      description: Item deleted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
     user-password-updated:
       description: Password updated successfully
       content:
@@ -1336,16 +1999,13 @@ components:
               message:
                 type: string
                 example: Password updated successfully
+                description: Password updated successfully
     forbidden:
       description: Forbidden
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Unauthorized to for this operation
+            $ref: '#/components/schemas/message'
     password-reset-success:
       content:
         application/json:
@@ -1354,7 +2014,8 @@ components:
             properties:
               message:
                 type: string
-                example: Password expiration updated successfully.
+                example: Password reset scheduled
+                description: Password reset scheduled successfully
     task-list:
       description: List of all Tasks
       content:
@@ -1407,18 +2068,24 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/project'
-    report-task:
+    report-task-user-breakdown:
       description: Successful Task Report
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/report-task'
-    report-project:
-      description: Successful Project Report
+    report-project-user-breakdown:
+      description: TODO Successful Project Report
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/report-project'
+    report-project-task-breakdown:
+      description: Successful Project Report
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/report-project-task-breakdown'
     report-user:
       description: Successful Project Report
       content:
@@ -1443,7 +2110,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/timetrack'
-    timetrack-clockin-referenceid-response:
+    timetrack-clockin-externalid-response:
       description: Successfully clocked in using reference ID
       content:
         application/json:
@@ -1470,7 +2137,7 @@ components:
           schema:
             $ref: '#/components/schemas/timetrack'
     invitation-list:
-      description: List of all Users
+      description: List of all invitations
       content:
         application/json:
           schema:
@@ -1478,25 +2145,35 @@ components:
             items:
               $ref: '#/components/schemas/invitation'
     invitation-created:
-      description: Created invitation
+      description: Successfully created invitation
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/invitation'
+            type: object
+            properties:
+              message:
+                type: string
+                example: Invitation successfully created
+              signupLink:
+                type: string
+                format: uri
+                example: https://timetracks.visidra.com/api/v1/invitation/QEFf93fjap/signup
+              invitation:
+                $ref: '#/components/schemas/invitation'
     invitation:
       description: A single Invitation object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/invitation'
-    org-created:
-      description: Successfully created Organisation
+    org:
+      description: A single Organisation object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/org'
-    org:
-      description: A single Organisation object
+    org-created:
+      description: Successfully created Organisation
       content:
         application/json:
           schema:
@@ -1507,169 +2184,84 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/org'
-    ServerError:
-      $ref: '#/components/responses/server-error'
-    NotFound:
-      $ref: '#/components/responses/not-found'
-  requestBodies:
-    login:
-      description: Login credentials (email and password)
+  parameters:
+    user-id:
+      name: userId
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/login'
-    signup-request:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          description: The email of the user to register
-        password:
-          type: string
-          description: The password of the user to register
-        organizationName:
-          type: string
-          description: The name of the organization the user belongs to
-      required:
-        - email
-        - password
-        - organizationName
-    user-create:
-      description: User object that needs to be created
+      description: The ID of the user
+      schema:
+        type: string
+    task-id:
+      name: taskId
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/user-create'
-    user-update:
-      description: User object that needs to be updated
+      description: The ID of the task
+      schema:
+        type: string
+    project-id:
+      name: projectId
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/user-update'
-    user-update-password:
-      description: Object that updates password
+      description: ID of the Project
+      schema:
+        type: string
+    start-date:
+      name: startDate
+      in: query
+      description: |
+        Start of the time range (inclusive), in UNIX milliseconds.
+        The range between startDate and endDate must not exceed 7 days.
+      required: false
+      schema:
+        type: integer
+        example: 1714521600000
+    end-date:
+      name: endDate
+      in: query
+      description: |
+        End of the time range (inclusive), in UNIX milliseconds.
+        The range between startDate and endDate must not exceed 7 days.
+      required: false
+      schema:
+        type: integer
+        example: 1715039999999
+    task-name:
+      name: name
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/user-update-password'
-    user-reset-password:
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - expiresAt
-            properties:
-              expiresAt:
-                type: string
-                format: date-time
-                description: The new expiration date for the user's password.
-                example: '2025-04-30T00:00:00Z'
-    task-create:
-      description: Task object that needs to be created
+      description: Name of the task to clock in
+      schema:
+        type: string
+        example: Write API Documentation
+    task-externalid:
+      name: externalid
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/task-create'
-    task-update:
-      description: Task object that needs to be updated
+      description: The external ID of the task to clock in
+      schema:
+        type: string
+        example: JIRA-492
+    timetrack-id:
+      name: trackId
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/task-update'
-    project-create:
-      description: Project object that needs to be created
+      description: The ID of the TimeTrack
+      schema:
+        type: string
+    invitation-id:
+      name: invId
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - name
-            properties:
-              name:
-                type: string
-                example: New Project
-              description:
-                type: string
-                example: Project description
-    project-update:
-      description: Project object that needs to be updated
+      description: The unique ID of the invitation
+      schema:
+        type: string
+        example: 0001-0001-00001
+    org-id:
+      name: orgId
+      in: path
       required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-                example: Updated Project Name
-              description:
-                type: string
-                example: Updated description for the project
-    project-move-task:
-      description: Object containing task move information
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - projectId
-            properties:
-              projectId:
-                type: string
-                example: proj-456
-    timetrack-create:
-      description: Create a new TimeTrack entry
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              taskId:
-                type: string
-              start:
-                type: integer
-                format: int64
-                description: Unix timestamp in milliseconds (UTC)
-              end:
-                type: integer
-                format: int64
-                description: Unix timestamp in milliseconds (UTC)
-    invitation-create:
-      description: Invitation object that needs to be created
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - email
-            properties:
-              email:
-                type: string
-                format: email
-                description: The email of the user being invited.
-                example: user@example.com
-    org-create:
-      description: Organisation object that needs to be created
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/org-create'
-    org-update:
-      description: Organisation object that needs to be updated
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/org-update'
+      description: The ID of the organisation
+      schema:
+        type: string
+        example: Os2fe92ja9EA
