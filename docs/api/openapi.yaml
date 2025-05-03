@@ -41,9 +41,6 @@ tags:
   - name: Report
     description: |
       Endpoints intended for internal use only. Access is restricted to super users with elevated permissions. These operations are not available to regular organisation members.
-  - name: Internal
-    description: |
-      Restricted endpoints intended for administrative use only, accessible to super users.
 paths:
   /signup:
     post:
@@ -686,7 +683,7 @@ paths:
         - $ref: '#/components/parameters/end-date'
       responses:
         '200':
-          $ref: '#/components/responses/report-user'
+          $ref: '#/components/responses/report-user-project-breakdown'
         '401':
           $ref: '#/components/responses/unauthorized'
         '404':
@@ -729,7 +726,7 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
-  /task/clockin/name/{name}:
+  /task/clockin/by-name/{name}:
     post:
       summary: Clock in using task name
       description: Starts time tracking using task name. If tasks does not exist, it gets created first
@@ -746,7 +743,7 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
-  /task/clockin/ref/{externalId}:
+  /task/clockin/by-external-id/{externalId}:
     post:
       summary: Clock in using external ID
       description: Starts time tracking using external ID. This ID typically comes from an integrated third-party project management system such as Jira, Trello, Asana, or GitHub. If tasks does not exists, it gets created first
@@ -963,48 +960,6 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/user-created'
-        '404':
-          $ref: '#/components/responses/not-found'
-        '500':
-          $ref: '#/components/responses/server-error'
-  /orgs:
-    get:
-      summary: Get all organisations
-      description: |
-        Retrieves allorganisation. Access to this endpoint is restricted to users with the `super` role.
-        Regular users should use the signup endpoint to create their own organisation.
-      operationId: getOrganisations
-      security:
-        - bearerAuth: []
-      tags:
-        - Internal
-      responses:
-        '200':
-          $ref: '#/components/responses/org'
-        '401':
-          $ref: '#/components/responses/unauthorized'
-        '500':
-          $ref: '#/components/responses/server-error'
-  /org:
-    post:
-      summary: Create a new organisation
-      description: |
-        Creates a new organisation. Access to this endpoint is restricted to users with the `super` role.
-        Regular users should use the signup endpoint to create their own organisation.
-      operationId: createOrganisation
-      security:
-        - bearerAuth: []
-      tags:
-        - Internal
-      requestBody:
-        $ref: '#/components/requestBodies/org-create'
-      responses:
-        '201':
-          $ref: '#/components/responses/org-created'
-        '400':
-          $ref: '#/components/responses/bad-request'
-        '401':
-          $ref: '#/components/responses/unauthorized'
         '404':
           $ref: '#/components/responses/not-found'
         '500':
@@ -1243,13 +1198,6 @@ components:
                 format: email
                 description: The email of the user being invited.
                 example: john.doe@example.com
-    org-create:
-      description: Organisation object that needs to be created
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/org-create'
     org-update:
       description: Organisation object that needs to be updated
       required: true
@@ -1809,24 +1757,6 @@ components:
           type: string
           format: date-time
           example: '2025-04-22T10:00:00Z'
-    org-create:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          example: Visidra
-        decription:
-          type: string
-          description: Optional general description of the organisation.
-        email:
-          type: string
-          format: email
-          nullable: false
-          description: |
-            Optional contact email for the organisation. Used for general communication or administrative purposes.
-          example: contact@visidra.com
     org-update:
       type: object
       properties:
@@ -2086,7 +2016,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/report-project-task-breakdown'
-    report-user:
+    report-user-project-breakdown:
       description: Successful Project Report
       content:
         application/json:
@@ -2172,12 +2102,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/org'
-    org-created:
-      description: Successfully created Organisation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/org'
     org-updated:
       description: Successfully updated Organisation
       content:
@@ -2256,7 +2180,7 @@ components:
       description: The unique ID of the invitation
       schema:
         type: string
-        example: 0001-0001-00001
+        example: QEFf93fjap
     org-id:
       name: orgId
       in: path
