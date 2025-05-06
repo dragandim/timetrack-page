@@ -59,9 +59,10 @@ paths:
           $ref: '#/components/responses/signup-409'
   /login:
     post:
-      summary: Login with long-lived token
+      summary: Login with email and password
+      description: |
+        Authenticates the user using their email and password credentials. Returns a long-lived access token (valid for 1 day) and a refresh token (valid for 7 days) to enable continuous access without requiring frequent re-authentication. This flow is suitable for interactive user sessions such as web or mobile clients.
       operationId: loginUser
-      description: Authenticates the user and returns a long-lived JWT along with a refresh token, enabling continuous access without frequent re-authentication.
       tags:
         - Account
       requestBody:
@@ -73,11 +74,12 @@ paths:
           $ref: '#/components/responses/login-400'
         '401':
           $ref: '#/components/responses/login-401'
-  /refresh:
+  /long/refresh:
     post:
       summary: Rotate long-lived refresh token
+      description: |
+        Exchanges a valid refresh token for a new access token and refresh token pair. The access token is valid for 1 day, and the refresh token expires 7 days after the session start time. To maintain continuous access, clients must call this endpoint before the refresh token expires.
       operationId: refreshLongSession
-      description: The JWT access token is valid for 1 day, and the refresh token expires after 7 days.
       tags:
         - Account
       requestBody:
@@ -87,9 +89,9 @@ paths:
           $ref: '#/components/responses/refresh-200'
         '401':
           $ref: '#/components/responses/refresh-401'
-  /token/login:
+  /api-key/login:
     post:
-      summary: Login with short-lived token
+      summary: Login with API key
       description: Logs in a user and returns a short-lived JWT along with a refresh token. Intended for programmatic access such as CLI tools, scripts, or temporary sessions requiring frequent token rotation.
       operationId: tokenLogin
       tags:
@@ -104,10 +106,11 @@ paths:
           $ref: '#/components/responses/login-400'
         '401':
           $ref: '#/components/responses/login-401'
-  /token/refresh:
+  /short/refresh:
     post:
       summary: Rotate short-term refresh token
-      description: JWT token TTL is 15 minutes and refresh token TTL of 1 day.
+      description: |
+        Exchanges a short-lived refresh token for a new access token and refresh token pair. The access token is valid for 15 minutes, while the refresh token remains valid for 1 day from the session start time. This flow is optimized for automated scripts or background jobs that require frequent token renewal and short-lived access, with security in mind.
       operationId: refreshShortSession
       tags:
         - Account
@@ -271,6 +274,90 @@ paths:
           $ref: '#/components/responses/bad-request'
         '403':
           $ref: '#/components/responses/forbidden'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /user/api-key:
+    post:
+      summary: Create a new API key
+      description: |
+        Generates a new API key for the authenticated user. The plain-text key is returned once in the response and must be stored securely. The response also includes metadata about the key for future reference.
+      operationId: createApiKey
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      requestBody:
+        $ref: '#/components/requestBodies/api-key-create'
+      responses:
+        '201':
+          $ref: '#/components/responses/api-key-created'
+        '400':
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /user/api-key/{apiKeyId}:
+    get:
+      summary: Get API key by ID
+      description: |
+        Retrieves metadata for a specific API key, including its name, creation time, last usage timestamp, and masked identifier (last 4 characters).i The actual secret value of the API key is not returned for security reasons.
+      operationId: getApiKey
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/api-key-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/api-key'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+    put:
+      summary: Rotate (renew) an API key
+      description: |
+        Invalidates the existing API key and generates a new one. The original key is permanently deleted, and a new key is returned in the response. The new key must be stored securely, as it will not be shown again. Useful when rotating credentials for security or automation purposes.
+      operationId: renewApiKey
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/api-key-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/api-key-renewed'
+        '400':
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+    delete:
+      summary: Delete a API key by ID
+      description: |
+        Permanently deletes an API key identified by its ID. This action revokes access for any client using the key. Once deleted, the key cannot be recovered.
+      operationId: deleteApiKey
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/api-key-id'
+      responses:
+        '204':
+          $ref: '#/components/responses/item-deleted'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
         '500':
           $ref: '#/components/responses/server-error'
   /tasks:
@@ -1112,6 +1199,13 @@ components:
                 format: date-time
                 description: The new expiration date in ISO_8601 format.
                 example: '2025-04-30T00:00:00Z'
+    api-key-create:
+      description: Name for the new API key
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/api-key-create'
     task-create:
       description: Task object that needs to be created
       required: true
@@ -1397,6 +1491,39 @@ components:
           format: password
           minLength: 12
           description: The new password the user wants to set.
+    api-key-create:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Name of the new api key
+    api-key:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        last4:
+          type: string
+        lastUsedAt:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-04-22T09:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-04-22T09:00:00Z'
+      required:
+        - id
+        - name
+        - last4
+        - createdAt
     task:
       type: object
       properties:
@@ -1946,6 +2073,34 @@ components:
                 type: string
                 example: Password reset scheduled
                 description: Password reset scheduled successfully
+    api-key-created:
+      description: API key successfully created
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              apiKey:
+                type: string
+                example: k4t43m1d... (secret)
+                description: The plain-text API key. Shown only once.
+              message:
+                type: string
+                example: API key created. Store it securely — it will not be shown again.
+              info:
+                $ref: '#/components/schemas/api-key'
+    api-key:
+      description: A single Api Key object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/api-key'
+    api-key-renewed:
+      description: Successfully renews api key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/task'
     task-list:
       description: List of all Tasks
       content:
@@ -2005,7 +2160,7 @@ components:
           schema:
             $ref: '#/components/schemas/report-task'
     report-project-user-breakdown:
-      description: TODO Successful Project Report
+      description: Successful Project Report
       content:
         application/json:
           schema:
@@ -2114,6 +2269,13 @@ components:
       in: path
       required: true
       description: The ID of the user
+      schema:
+        type: string
+    api-key-id:
+      name: apiKeyId
+      in: path
+      required: true
+      description: The ID of the api key
       schema:
         type: string
     task-id:
