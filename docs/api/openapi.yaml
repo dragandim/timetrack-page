@@ -278,6 +278,22 @@ paths:
           $ref: '#/components/responses/forbidden'
         '500':
           $ref: '#/components/responses/server-error'
+  /user/api-keys:
+    get:
+      summary: Get all API keys
+      description: Retrieves all API keys owned by user
+      operationId: getAllApiKeys
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      responses:
+        '200':
+          $ref: '#/components/responses/api-key-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /user/api-key:
     post:
       summary: Create a new API key
@@ -687,6 +703,27 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/task-updated'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /report/task/{taskId}:
+    get:
+      summary: Get task report for total tracked time
+      description: |
+        Retrieves a detailed time tracking report for a specific task, including total tracked time, user-by-user breakdown, and related time entries.
+      operationId: getTaskReport
+      security:
+        - bearerAuth: []
+      tags:
+        - Report
+      parameters:
+        - $ref: '#/components/parameters/task-id'
+      responses:
+        '200':
+          $ref: '#/components/responses/report-task-timetrack'
         '401':
           $ref: '#/components/responses/unauthorized'
         '404':
@@ -1408,12 +1445,11 @@ components:
     api-key-credentials:
       type: object
       required:
-        - email
-        - password
+        - apiKey
       properties:
         apiKey:
           type: string
-          format: email
+          format: key
           example: k4t43m1d... (secret)
     session:
       type: object
@@ -1510,14 +1546,6 @@ components:
           format: password
           minLength: 12
           description: The new password the user wants to set.
-    api-key-create:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          example: Name of the new api key
     api-key:
       type: object
       properties:
@@ -1543,6 +1571,14 @@ components:
         - name
         - last4
         - createdAt
+    api-key-create:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Name of the new api key
     task:
       type: object
       properties:
@@ -1652,6 +1688,90 @@ components:
         seconds:
           type: integer
           example: 10
+    timetrack:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 398fa3ov3
+        taskId:
+          type: string
+          example: task789
+        userId:
+          type: string
+          example: user456
+        startTime:
+          type: string
+          format: date-time
+          example: '2025-04-22T14:00:00Z'
+          description: Human-readable ISO 8601 version of the start timestamp (UNIX ms).
+        endTime:
+          type: string
+          format: date-time
+          example: '2025-04-22T15:30:00Z'
+          description: Human-readable ISO 8601 version of the start timestamp (UNIX ms).
+        start:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+        end:
+          type: integer
+          format: int64
+          example: 1714580000000
+          description: End time of the time track in UNIX milliseconds
+        amount:
+          type: integer
+          format: int64
+          example: 1714500000000
+          description: Total tracked duration in milliseconds, calculated as the difference between end and start.
+        hours:
+          type: integer
+          example: 1
+        minutes:
+          type: integer
+          example: 35
+        seconds:
+          type: integer
+          example: 5
+        timeFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the amount field.
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-04-22T14:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-04-22T15:35:00Z'
+    report-task-timetrack:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/report-time'
+        - type: object
+          properties:
+            taskId:
+              type: string
+            taskName:
+              type: string
+              example: New website design
+            taskDescription:
+              type: string
+              example: Create a new homepage using React
+            timeFormatted:
+              type: string
+              description: Human-readable formatted time string, e.g. "4h 10m 10s"
+              example: 4h 10m 10s
+            total:
+              type: integer
+              format: int64
+              example: 1712100000000
+            tracks:
+              type: array
+              items:
+                $ref: '#/components/schemas/timetrack'
     report-user-breakdown:
       type: object
       allOf:
@@ -1832,55 +1952,6 @@ components:
             - total
             - timeFormatted
             - projects
-    timetrack:
-      type: object
-      properties:
-        id:
-          type: string
-          example: 398fa3ov3
-        taskId:
-          type: string
-          example: task789
-        userId:
-          type: string
-          example: user456
-        startTime:
-          type: string
-          format: date-time
-          example: '2025-04-22T14:00:00Z'
-          description: Human-readable ISO 8601 version of the start timestamp (UNIX ms).
-        endTime:
-          type: string
-          format: date-time
-          example: '2025-04-22T15:30:00Z'
-          description: Human-readable ISO 8601 version of the start timestamp (UNIX ms).
-        start:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-        end:
-          type: integer
-          format: int64
-          example: 1714580000000
-          description: End time of the time track in UNIX milliseconds
-        amount:
-          type: integer
-          format: int64
-          example: 1714500000000
-          description: Total tracked duration in milliseconds, calculated as the difference between end and start.
-        timeFormatted:
-          type: string
-          example: 1h 35m 5s
-          description: Human-readable version of the tracked duration, derived from the amount field.
-        createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T14:00:00Z'
-        updatedAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T15:35:00Z'
     invitation:
       type: object
       properties:
@@ -2092,6 +2163,14 @@ components:
                 type: string
                 example: Password reset scheduled
                 description: Password reset scheduled successfully
+    api-key-list:
+      description: List of all API keys owned by user
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/api-key'
     api-key-created:
       description: API key successfully created
       content:
@@ -2172,6 +2251,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/project'
+    report-task-timetrack:
+      description: Successful Task Report
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/report-task-timetrack'
     report-task-user-breakdown:
       description: Successful Task Report
       content:
@@ -2261,7 +2346,7 @@ components:
               signupLink:
                 type: string
                 format: uri
-                example: https://timetracks.visidra.com/api/v1/invitation/QEFf93fjap/signup
+                example: https://timetracks-api.visidra.com/api/v1/invitation/QEFf93fjap/signup
               invitation:
                 $ref: '#/components/schemas/invitation'
     invitation:
