@@ -98,7 +98,7 @@ paths:
         - Account
       requestBody:
         required: true
-        $ref: '#/components/requestBodies/login'
+        $ref: '#/components/requestBodies/api-key-login'
       responses:
         '200':
           $ref: '#/components/responses/login-200'
@@ -123,7 +123,9 @@ paths:
           $ref: '#/components/responses/refresh-401'
   /sessions:
     get:
-      summary: List all active sessions for the authenticated user
+      summary: List all active sessions for the organisation
+      description: |
+        Retrieves all active sessions (access and refresh tokens) created by users within the authenticated organisation. This endpoint is typically used by administrators to monitor or audit user sessions across the entire team. Requires a valid access token with administrative privileges.
       operationId: listSessions
       security:
         - bearerAuth: []
@@ -1165,6 +1167,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/refresh'
+    api-key-login:
+      description: Login with API key
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/api-key-credentials'
     user-create:
       description: User object that needs to be created
       required: true
@@ -1373,10 +1382,10 @@ components:
       properties:
         accessToken:
           type: string
-          example: your.jwt.token.here
+          example: q224EM8d...
         refreshToken:
           type: string
-          example: your.jwt.token.here
+          example: ia3af99...
         expiresIn:
           type: integer
           format: int64
@@ -1393,9 +1402,19 @@ components:
       properties:
         refreshToken:
           type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          example: eyJhbGciOi...
           required:
             - refreshToken
+    api-key-credentials:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        apiKey:
+          type: string
+          format: email
+          example: k4t43m1d... (secret)
     session:
       type: object
       properties:
