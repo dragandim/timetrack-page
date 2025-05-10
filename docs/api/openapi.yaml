@@ -152,6 +152,22 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
+  /users/count:
+    get:
+      summary: Get user count
+      description: Returns the total number of users in your organisation.
+      operationId: getUserCount
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      responses:
+        '200':
+          $ref: '#/components/responses/user-count'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /user:
     post:
       summary: Create a new user
@@ -394,6 +410,22 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
+  /tasks/count:
+    get:
+      summary: Get task count
+      description: Returns the total number of tasks in your organisation.
+      operationId: getTaskCount
+      security:
+        - bearerAuth: []
+      tags:
+        - Task
+      responses:
+        '200':
+          $ref: '#/components/responses/task-count'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task:
     post:
       summary: Create a new task
@@ -488,6 +520,22 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/project-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /projects/count:
+    get:
+      summary: Get project count
+      description: Returns the total number of projects in your organisation.
+      operationId: getProjectCount
+      security:
+        - bearerAuth: []
+      tags:
+        - Project
+      responses:
+        '200':
+          $ref: '#/components/responses/project-count'
         '401':
           $ref: '#/components/responses/unauthorized'
         '500':
@@ -993,6 +1041,22 @@ paths:
           $ref: '#/components/responses/not-found'
         '500':
           $ref: '#/components/responses/server-error'
+  /timetracks/count:
+    get:
+      summary: Get time track count
+      description: Returns the total number of time tracks in your organisation.
+      operationId: getTimeTrackCount
+      security:
+        - bearerAuth: []
+      tags:
+        - TimeTrack
+      responses:
+        '200':
+          $ref: '#/components/responses/timetrack-count'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /invitations:
     get:
       summary: Get all invitations
@@ -1005,6 +1069,22 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/invitation-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /invitations/count:
+    get:
+      summary: Get invitation count
+      description: Returns the total number of invitations in your organisation.
+      operationId: getInvitationCount
+      security:
+        - bearerAuth: []
+      tags:
+        - Invitation
+      responses:
+        '200':
+          $ref: '#/components/responses/invitation-count'
         '401':
           $ref: '#/components/responses/unauthorized'
         '500':
@@ -1498,6 +1578,12 @@ components:
           type: string
           format: date-time
           example: '2025-04-22T10:00:00Z'
+    item-count:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 29
     user-create:
       type: object
       required:
@@ -2100,6 +2186,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/message'
+    user-count:
+      description: Successfully fetched user count
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/item-count'
     user-created:
       description: Successfully created User
       content:
@@ -2207,6 +2299,12 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/task'
+    task-count:
+      description: Successfully fetched task count
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/item-count'
     task-created:
       description: Successfully created Task
       content:
@@ -2233,6 +2331,12 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/project'
+    project-count:
+      description: Successfully fetched project count
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/item-count'
     project-created:
       description: Successfully created Project
       content:
@@ -2325,6 +2429,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/timetrack'
+    timetrack-count:
+      description: Successfully fetched time track count
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/item-count'
     invitation-list:
       description: List of all invitations
       content:
@@ -2333,6 +2443,12 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/invitation'
+    invitation-count:
+      description: Successfully fetched user count
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/item-count'
     invitation-created:
       description: Successfully created invitation
       content:
