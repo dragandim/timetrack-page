@@ -168,6 +168,22 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
+  /users/summary:
+    get:
+      summary: Get a summary of users
+      description: Returns a high-level summary of users in the organization. Supports pagination.
+      tags:
+        - Summary
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/last-key'
+      responses:
+        '200':
+          $ref: '#/components/responses/users-summary-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /user:
     post:
       summary: Create a new user
@@ -426,6 +442,22 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
+  /tasks/summay:
+    get:
+      summary: Get a summary of tasks
+      description: Returns a high-level summary of tasks in the organization. Supports pagination.
+      tags:
+        - Summary
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/last-key'
+      responses:
+        '200':
+          $ref: '#/components/responses/tasks-summary-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /task:
     post:
       summary: Create a new task
@@ -536,6 +568,22 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/project-count'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /projects/summary:
+    get:
+      summary: Get a summary of projects
+      description: Returns a high-level summary of projects in the organization. Supports pagination.
+      tags:
+        - Summary
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/last-key'
+      responses:
+        '200':
+          $ref: '#/components/responses/projects-summary-200'
         '401':
           $ref: '#/components/responses/unauthorized'
         '500':
@@ -761,8 +809,8 @@ paths:
     get:
       summary: Get task report for total tracked time
       description: |
-        Retrieves a detailed time tracking report for a specific task, including total tracked time, user-by-user breakdown, and related time entries.
-      operationId: getTaskReport
+        Retrieves a detailed time tracking report for a specific task, including total tracked time, and related time entries.
+      operationId: getTaskTimeTrackReport
       security:
         - bearerAuth: []
       tags:
@@ -783,7 +831,7 @@ paths:
       summary: Get task report with user breakdown
       description: |
         Retrieves a detailed time tracking report for a specific task, including total tracked time, user-by-user breakdown, and related time entries.
-      operationId: getTaskReport
+      operationId: getTaskUserReport
       security:
         - bearerAuth: []
       tags:
@@ -1584,6 +1632,54 @@ components:
         count:
           type: integer
           example: 29
+    user-summary:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        total:
+          type: integer
+          description: Total time tracked by the user in milliseconds
+        totalFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the total field.
+        lastSessionAt:
+          type: string
+          format: date-time
+          example: '2025-04-22T15:30:00Z'
+          description: Time and date in ISO 8601 format
+        projectsInvolved:
+          type: integer
+          description: Number of projects the user has contributed to
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - total
+        - totalFormatted
+        - lastSessionAt
+        - projectsInvolved
+    summary-user-list:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/user-summary'
+        lastKey:
+          type: string
+          nullable: true
+          description: Token to fetch the next page of results
+      required:
+        - items
     user-create:
       type: object
       required:
@@ -1701,6 +1797,58 @@ components:
           type: string
           format: date-time
           example: '2025-04-22T09:00:00Z'
+    task-summary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        projectId:
+          type: string
+        total:
+          type: integer
+          description: Total time tracked for this task in milliseconds
+        totalFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the total field.
+        entryCount:
+          type: integer
+          description: Number of time tracking records
+        userCount:
+          type: integer
+          description: Number of users who contributed time to this task
+        firstEntry:
+          type: string
+          format: date-time
+          example: '2025-04-22T14:00:00Z'
+        lastEntry:
+          type: string
+          format: date-time
+          example: '2025-04-22T14:00:00Z'
+      required:
+        - id
+        - name
+        - projectId
+        - total
+        - entryCount
+        - userCount
+        - firstEntry
+        - lastEntry
+    summary-task-list:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/task-summary'
+        lastKey:
+          type: string
+          nullable: true
+          description: Token to fetch the next page of results
+      required:
+        - items
     task-create:
       type: object
       required:
@@ -1751,6 +1899,58 @@ components:
         updatedAt:
           type: string
           format: date-time
+    project-summary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        externalId:
+          type: string
+        total:
+          type: number
+        totalFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the total field.
+        taskCount:
+          type: integer
+          description: Number of tasks in this project
+        userCount:
+          type: integer
+          description: Number of users who contributed to this project
+        firstEntry:
+          type: string
+          format: date-time
+          example: '2025-04-22T14:00:00Z'
+        lastEntry:
+          type: string
+          format: date-time
+          example: '2025-04-22T14:00:00Z'
+      required:
+        - id
+        - name
+        - externalId
+        - total
+        - totalformatted
+        - taskCount
+        - userCount
+        - firstEntry
+        - lastEntry
+    summary-project-list:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/project-summary'
+        lastKey:
+          type: string
+          nullable: true
+          description: Token to fetch the next page of results
+      required:
+        - items
     project-update:
       type: object
       required:
@@ -1838,15 +2038,15 @@ components:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            taskId:
+            id:
               type: string
-            taskName:
+            name:
               type: string
               example: New website design
-            taskDescription:
+            description:
               type: string
               example: Create a new homepage using React
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable formatted time string, e.g. "4h 10m 10s"
               example: 4h 10m 10s
@@ -1864,37 +2064,37 @@ components:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            projectId:
+            id:
               type: string
-            projectName:
+            name:
               type: string
             total:
               type: integer
               description: Time tracked in this project (milliseconds)
               example: 1914100000000
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable string, e.g. "2h 45m 15s"
           required:
-            - projectId
-            - projectName
+            - id
+            - name
             - total
-            - timeFormatted
+            - totalFormatted
     report-task:
       type: object
       allOf:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            taskId:
+            id:
               type: string
-            taskName:
+            name:
               type: string
               example: New website design
-            taskDescription:
+            description:
               type: string
               example: Create a new homepage using React
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable formatted time string, e.g. "4h 10m 10s"
               example: 4h 10m 10s
@@ -1912,7 +2112,7 @@ components:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            userId:
+            id:
               type: string
             firstName:
               type: string
@@ -1921,32 +2121,32 @@ components:
             total:
               type: integer
               description: Time tracked by this user (in milliseconds)
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable formatted time string
           required:
-            - userId
+            - id
             - firstName
             - lastName
             - total
-            - timeFormatted
+            - totalFormatted
     report-project:
       type: object
       allOf:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            projectId:
+            id:
               type: string
-            projectName:
+            name:
               type: string
-            projectDescription:
+            description:
               type: string
               nullable: true
             total:
               type: integer
               description: Total time in milliseconds
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable formatted time string, e.g. "4h 10m 10s"
             users:
@@ -1954,51 +2154,51 @@ components:
               items:
                 $ref: '#/components/schemas/report-project-breakdown'
           required:
-            - projectId
-            - projectName
+            - id
+            - name
             - total
-            - timeFormatted
-            - userBreakdown
+            - totalFormatted
+            - users
     report-task-breakdown:
       type: object
       allOf:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            taskId:
+            id:
               type: string
-            taskName:
+            name:
               type: string
-            taskDescription:
+            description:
               type: string
             total:
               type: integer
               description: Time tracked by this user (in milliseconds)
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable formatted time string
           required:
-            - taskId
-            - taskName
+            - id
+            - name
             - total
-            - timeFormatted
+            - totalFormatted
     report-project-task-breakdown:
       type: object
       allOf:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            projectId:
+            id:
               type: string
-            projectName:
+            name:
               type: string
-            projectDescription:
+            description:
               type: string
               nullable: true
             total:
               type: integer
               description: Total time in milliseconds
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable formatted time string, e.g. "4h 10m 10s"
             tasks:
@@ -2006,10 +2206,10 @@ components:
               items:
                 $ref: '#/components/schemas/report-task-breakdown'
           required:
-            - projectId
-            - projectName
+            - id
+            - name
             - total
-            - timeFormatted
+            - totalFormatted
             - tasks
     report-user:
       type: object
@@ -2017,14 +2217,18 @@ components:
         - $ref: '#/components/schemas/report-time'
         - type: object
           properties:
-            userId:
+            id:
               type: string
-            userName:
+            email:
+              type: string
+            firstName:
+              type: string
+            lasttName:
               type: string
             total:
               type: integer
               description: Total time tracked in milliseconds
-            timeFormatted:
+            totalFormatted:
               type: string
               description: Human-readable formatted time string, e.g. "4h 30m 00s"
             projects:
@@ -2033,10 +2237,12 @@ components:
               items:
                 $ref: '#/components/schemas/report-user-breakdown'
           required:
-            - userId
-            - userName
+            - id
+            - email
+            - firstName
+            - lastName
             - total
-            - timeFormatted
+            - totalFormatted
             - projects
     invitation:
       type: object
@@ -2192,6 +2398,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/item-count'
+    users-summary-200:
+      description: A list of user summaries with pagination support
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/summary-user-list'
     user-created:
       description: Successfully created User
       content:
@@ -2305,6 +2517,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/item-count'
+    tasks-summary-200:
+      description: A list of task summaries with pagination support
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/summary-task-list'
     task-created:
       description: Successfully created Task
       content:
@@ -2337,6 +2555,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/item-count'
+    projects-summary-200:
+      description: A list of project summaries with pagination support
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/summary-project-list'
     project-created:
       description: Successfully created Project
       content:
@@ -2484,6 +2708,23 @@ components:
           schema:
             $ref: '#/components/schemas/org'
   parameters:
+    limit:
+      name: limit
+      in: query
+      description: Maximum number of users to include in the summary.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    last-key:
+      name: lastKey
+      in: query
+      description: Pagination token to fetch the next set of results.
+      required: false
+      schema:
+        type: string
     user-id:
       name: userId
       in: path
