@@ -41,6 +41,9 @@ tags:
   - name: Report
     description: |
       Endpoints intended for internal use only. Access is restricted to super users with elevated permissions. These operations are not available to regular organisation members.
+  - name: Summary
+    description: |
+      Summary endpoints provide high-level aggregated data across users, tasks, or projects. Intended for internal dashboards or analytics tools. Access is restricted to super users with elevated permissions. Regular organisation members are not authorized to query these endpoints.
 paths:
   /signup:
     post:
@@ -442,7 +445,7 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
-  /tasks/summay:
+  /tasks/summary:
     get:
       summary: Get a summary of tasks
       description: Returns a high-level summary of tasks in the organization. Supports pagination.
@@ -1494,13 +1497,15 @@ components:
           type: string
           example: member
         createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         updatedAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
     org:
       type: object
       properties:
@@ -1521,13 +1526,15 @@ components:
             Optional contact email for the organisation. Used for general communication or administrative purposes.
           example: contact@visidra.com
         createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         updatedAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
     login-credentials:
       type: object
       required:
@@ -1619,13 +1626,15 @@ components:
           type: string
           example: member
         createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         updatedAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
     item-count:
       type: object
       properties:
@@ -1650,14 +1659,14 @@ components:
           type: string
           example: 1h 35m 5s
           description: Human-readable version of the tracked duration, derived from the total field.
-        lastSessionAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T15:30:00Z'
-          description: Time and date in ISO 8601 format
         projectsInvolved:
           type: integer
           description: Number of projects the user has contributed to
+        lastSessionAt:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
       required:
         - id
         - email
@@ -1665,8 +1674,8 @@ components:
         - lastName
         - total
         - totalFormatted
-        - lastSessionAt
         - projectsInvolved
+        - lastSessionAt
     summary-user-list:
       type: object
       properties:
@@ -1741,13 +1750,15 @@ components:
           type: integer
           format: int64
         createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T09:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         updatedAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T09:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
       required:
         - id
         - name
@@ -1790,13 +1801,45 @@ components:
           description: |
             The ID of the project this task belongs to, if any. Omitted when the task is not assigned to a project.
         createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T09:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         updatedAt:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+    project:
+      type: object
+      properties:
+        id:
           type: string
-          format: date-time
-          example: '2025-04-22T09:00:00Z'
+          example: E9a9f9f93Aq
+        userId:
+          type: string
+          example: Q2fspaa93Ad
+        name:
+          type: string
+          example: New e-commerce system
+        description:
+          type: string
+          example: Few months with NestJS and Vue
+          description: Optional field for detailed description
+        externalId:
+          type: string
+          example: JIRA-102
+          description: Optional external reference id
+        createdAt:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+        updatedAt:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
     task-summary:
       type: object
       properties:
@@ -1806,6 +1849,8 @@ components:
           type: string
         projectId:
           type: string
+        project:
+          $ref: '#/components/schemas/project'
         total:
           type: integer
           description: Total time tracked for this task in milliseconds
@@ -1820,13 +1865,15 @@ components:
           type: integer
           description: Number of users who contributed time to this task
         firstEntry:
-          type: string
-          format: date-time
-          example: '2025-04-22T14:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         lastEntry:
-          type: string
-          format: date-time
-          example: '2025-04-22T14:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
       required:
         - id
         - name
@@ -1872,33 +1919,6 @@ components:
         description:
           type: string
           example: Create a new homepage using React
-    project:
-      type: object
-      properties:
-        id:
-          type: string
-          example: E9a9f9f93Aq
-        userId:
-          type: string
-          example: Q2fspaa93Ad
-        name:
-          type: string
-          example: New e-commerce system
-        description:
-          type: string
-          example: Few months with NestJS and Vue
-          description: Optional field for detailed description
-        externalId:
-          type: string
-          example: JIRA-102
-          description: Optional external reference id
-        createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T09:00:00Z'
-        updatedAt:
-          type: string
-          format: date-time
     project-summary:
       type: object
       properties:
@@ -1921,13 +1941,15 @@ components:
           type: integer
           description: Number of users who contributed to this project
         firstEntry:
-          type: string
-          format: date-time
-          example: '2025-04-22T14:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         lastEntry:
-          type: string
-          format: date-time
-          example: '2025-04-22T14:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
       required:
         - id
         - name
@@ -1962,18 +1984,6 @@ components:
         description:
           type: string
           example: Few months with NestJS and Vue
-    report-time:
-      type: object
-      properties:
-        hours:
-          type: integer
-          example: 4
-        minutes:
-          type: integer
-          example: 10
-        seconds:
-          type: integer
-          example: 10
     timetrack:
       type: object
       properties:
@@ -2025,225 +2035,203 @@ components:
           example: 1h 35m 5s
           description: Human-readable version of the tracked duration, derived from the amount field.
         createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T14:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         updatedAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T15:35:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
     report-task-timetrack:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-              example: New website design
-            description:
-              type: string
-              example: Create a new homepage using React
-            totalFormatted:
-              type: string
-              description: Human-readable formatted time string, e.g. "4h 10m 10s"
-              example: 4h 10m 10s
-            total:
-              type: integer
-              format: int64
-              example: 1712100000000
-            tracks:
-              type: array
-              items:
-                $ref: '#/components/schemas/timetrack'
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: New website design
+        description:
+          type: string
+          example: Create a new homepage using React
+        totalFormatted:
+          type: string
+          description: Human-readable formatted time string, e.g. "4h 10m 10s"
+          example: 4h 10m 10s
+        total:
+          type: integer
+          format: int64
+          example: 1712100000000
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/timetrack'
     report-user-breakdown:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-            total:
-              type: integer
-              description: Time tracked in this project (milliseconds)
-              example: 1914100000000
-            totalFormatted:
-              type: string
-              description: Human-readable string, e.g. "2h 45m 15s"
-          required:
-            - id
-            - name
-            - total
-            - totalFormatted
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        total:
+          type: integer
+          description: Time tracked in this project (milliseconds)
+          example: 1914100000000
+        totalFormatted:
+          type: string
+          description: Human-readable string, e.g. "2h 45m 15s"
+      required:
+        - id
+        - name
+        - total
+        - totalFormatted
     report-task:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-              example: New website design
-            description:
-              type: string
-              example: Create a new homepage using React
-            totalFormatted:
-              type: string
-              description: Human-readable formatted time string, e.g. "4h 10m 10s"
-              example: 4h 10m 10s
-            total:
-              type: integer
-              format: int64
-              example: 1712100000000
-            users:
-              type: array
-              items:
-                $ref: '#/components/schemas/report-user-breakdown'
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: New website design
+        description:
+          type: string
+          example: Create a new homepage using React
+        totalFormatted:
+          type: string
+          description: Human-readable formatted time string, e.g. "4h 10m 10s"
+          example: 4h 10m 10s
+        total:
+          type: integer
+          format: int64
+          example: 1712100000000
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/report-user-breakdown'
     report-project-breakdown:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            firstName:
-              type: string
-            lastName:
-              type: string
-            total:
-              type: integer
-              description: Time tracked by this user (in milliseconds)
-            totalFormatted:
-              type: string
-              description: Human-readable formatted time string
-          required:
-            - id
-            - firstName
-            - lastName
-            - total
-            - totalFormatted
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        total:
+          type: integer
+          description: Time tracked by this user (in milliseconds)
+        totalFormatted:
+          type: string
+          description: Human-readable formatted time string
+      required:
+        - id
+        - firstName
+        - lastName
+        - total
+        - totalFormatted
     report-project:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-            description:
-              type: string
-              nullable: true
-            total:
-              type: integer
-              description: Total time in milliseconds
-            totalFormatted:
-              type: string
-              description: Human-readable formatted time string, e.g. "4h 10m 10s"
-            users:
-              type: array
-              items:
-                $ref: '#/components/schemas/report-project-breakdown'
-          required:
-            - id
-            - name
-            - total
-            - totalFormatted
-            - users
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        total:
+          type: integer
+          description: Total time in milliseconds
+        totalFormatted:
+          type: string
+          description: Human-readable formatted time string, e.g. "4h 10m 10s"
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/report-project-breakdown'
+      required:
+        - id
+        - name
+        - total
+        - totalFormatted
+        - users
     report-task-breakdown:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-            description:
-              type: string
-            total:
-              type: integer
-              description: Time tracked by this user (in milliseconds)
-            totalFormatted:
-              type: string
-              description: Human-readable formatted time string
-          required:
-            - id
-            - name
-            - total
-            - totalFormatted
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        total:
+          type: integer
+          description: Time tracked by this user (in milliseconds)
+        totalFormatted:
+          type: string
+          description: Human-readable formatted time string
+      required:
+        - id
+        - name
+        - total
+        - totalFormatted
     report-project-task-breakdown:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-            description:
-              type: string
-              nullable: true
-            total:
-              type: integer
-              description: Total time in milliseconds
-            totalFormatted:
-              type: string
-              description: Human-readable formatted time string, e.g. "4h 10m 10s"
-            tasks:
-              type: array
-              items:
-                $ref: '#/components/schemas/report-task-breakdown'
-          required:
-            - id
-            - name
-            - total
-            - totalFormatted
-            - tasks
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        total:
+          type: integer
+          description: Total time in milliseconds
+        totalFormatted:
+          type: string
+          description: Human-readable formatted time string, e.g. "4h 10m 10s"
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/report-task-breakdown'
+      required:
+        - id
+        - name
+        - total
+        - totalFormatted
+        - tasks
     report-user:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/report-time'
-        - type: object
-          properties:
-            id:
-              type: string
-            email:
-              type: string
-            firstName:
-              type: string
-            lasttName:
-              type: string
-            total:
-              type: integer
-              description: Total time tracked in milliseconds
-            totalFormatted:
-              type: string
-              description: Human-readable formatted time string, e.g. "4h 30m 00s"
-            projects:
-              type: array
-              description: Time tracked per project
-              items:
-                $ref: '#/components/schemas/report-user-breakdown'
-          required:
-            - id
-            - email
-            - firstName
-            - lastName
-            - total
-            - totalFormatted
-            - projects
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lasttName:
+          type: string
+        total:
+          type: integer
+          description: Total time tracked in milliseconds
+        totalFormatted:
+          type: string
+          description: Human-readable formatted time string, e.g. "4h 30m 00s"
+        projects:
+          type: array
+          description: Time tracked per project
+          items:
+            $ref: '#/components/schemas/report-user-breakdown'
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - total
+        - totalFormatted
+        - projects
     invitation:
       type: object
       properties:
@@ -2259,13 +2247,15 @@ components:
           format: date-time
           example: '2025-04-22T10:00:00Z'
         createdAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
         updatedAt:
-          type: string
-          format: date-time
-          example: '2025-04-22T10:00:00Z'
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
     org-update:
       type: object
       properties:
@@ -2360,12 +2350,20 @@ components:
             $ref: '#/components/schemas/message'
     session-list:
       description: List of all Sessions
+      type: object
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/session'
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/session'
+              lastKey:
+                type: string
+                nullable: true
+                description: Base64-encoded cursor for pagination. Omit if no more results.
     session-401:
       description: Unauthorized attempt
       content:
@@ -2468,13 +2466,21 @@ components:
                 example: Password reset scheduled
                 description: Password reset scheduled successfully
     api-key-list:
-      description: List of all API keys owned by user
+      description: List of all API keys
+      type: object
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/api-key'
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-key'
+              lastKey:
+                type: string
+                nullable: true
+                description: Base64-encoded cursor for pagination. Omit if no more results.
     api-key-created:
       description: API key successfully created
       content:
@@ -2661,12 +2667,20 @@ components:
             $ref: '#/components/schemas/item-count'
     invitation-list:
       description: List of all invitations
+      type: object
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/invitation'
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/invitation'
+              lastKey:
+                type: string
+                nullable: true
+                description: Base64-encoded cursor for pagination. Omit if no more results.
     invitation-count:
       description: Successfully fetched user count
       content:
