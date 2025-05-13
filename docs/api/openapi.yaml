@@ -44,6 +44,9 @@ tags:
   - name: Summary
     description: |
       Summary endpoints provide high-level aggregated data across users, tasks, or projects. Intended for internal dashboards or analytics tools. Access is restricted to super users with elevated permissions. Regular organisation members are not authorized to query these endpoints.
+  - name: Metrics
+    description: |
+      These endpoints return the total time tracked by all users in an organization for a specific time window — day, week, or month. Intended for internal reporting and performance dashboards, they provide high-level insight into organizational activity. Only administrators are authorized to access these endpoints.
 paths:
   /signup:
     post:
@@ -129,7 +132,7 @@ paths:
       summary: List all active sessions for the organisation
       description: |
         Retrieves all active sessions (access and refresh tokens) created by users within the authenticated organisation. This endpoint is typically used by administrators to monitor or audit user sessions across the entire team. Requires a valid access token with administrative privileges.
-      operationId: listSessions
+      operationId: getOrgSessions
       security:
         - bearerAuth: []
       tags:
@@ -139,6 +142,22 @@ paths:
           $ref: '#/components/responses/session-list'
         '401':
           $ref: '#/components/responses/session-401'
+  /api-keys:
+    get:
+      summary: List all API keys for organisations
+      description: Retrieves all API keys owned by organisation
+      operationId: getOrgApiKeys
+      security:
+        - bearerAuth: []
+      tags:
+        - Account
+      responses:
+        '200':
+          $ref: '#/components/responses/api-key-list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /users:
     get:
       summary: Get all users
@@ -315,7 +334,7 @@ paths:
           $ref: '#/components/responses/server-error'
   /user/api-keys:
     get:
-      summary: Get all API keys
+      summary: Get all API keys for user
       description: Retrieves all API keys owned by user
       operationId: getAllApiKeys
       security:
@@ -334,7 +353,7 @@ paths:
       summary: Create a new API key
       description: |
         Generates a new API key for the authenticated user. The plain-text key is returned once in the response and must be stored securely. The response also includes metadata about the key for future reference.
-      operationId: createApiKey
+      operationId: createUserApiKey
       security:
         - bearerAuth: []
       tags:
@@ -355,7 +374,7 @@ paths:
       summary: Get API key by ID
       description: |
         Retrieves metadata for a specific API key, including its name, creation time, last usage timestamp, and masked identifier (last 4 characters).i The actual secret value of the API key is not returned for security reasons.
-      operationId: getApiKey
+      operationId: getUserApiKey
       security:
         - bearerAuth: []
       tags:
@@ -541,6 +560,57 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '404':
           $ref: '#/components/responses/not-found'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/time/day/{index}:
+    get:
+      tags:
+        - Metrics
+      summary: Get total time tracked by day
+      operationId: getTimeTrackedByDay
+      description: |
+        Returns the total time tracked across the organization for a specific day, relative to today. Index `0` means today, `1` means yesterday, `2` means two days ago, etc. Requires admin-level authorization.
+      parameters:
+        - $ref: '#/components/parameters/metrics-index'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-time-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/time/week/{index}:
+    get:
+      tags:
+        - Metrics
+      summary: Get total time tracked for a specific week
+      operationId: getTimeTrackedWeekByIndex
+      description: |
+        Returns the total time tracked across the organization for a specific week. Index `0` means the current week, `1` means last week, `2` the week before, etc. Each week starts on Monday (ISO 8601). Requires admin-level authorization.
+      parameters:
+        - $ref: '#/components/parameters/metrics-index'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-time-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/time/month/{index}:
+    get:
+      tags:
+        - Metrics
+      summary: Get total time tracked for a specific month
+      operationId: getTimeTrackedMonthByIndex
+      description: |
+        Returns the total time tracked across the organization for a specific month. Index `0` refers to the current month, `1` to last month, `2` to the month before that, etc. Results are calculated based on full calendar months. Requires admin-level authorization.
+      parameters:
+        - $ref: '#/components/parameters/metrics-index'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-time-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
   /projects:
@@ -1372,10 +1442,10 @@ components:
               - expiresAt
             properties:
               expiresAt:
-                type: string
-                format: date-time
-                description: The new expiration date in ISO_8601 format.
-                example: '2025-04-30T00:00:00Z'
+                type: integer
+                format: int64
+                example: 1712100000000
+                description: Start time of the time track in UNIX milliseconds
     api-key-create:
       description: Name for the new API key
       required: true
@@ -1606,6 +1676,33 @@ components:
         userAgent:
           type: string
           example: Mozilla/5.0
+    api-key:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        last4:
+          type: string
+        lastUsedAt:
+          type: integer
+          format: int64
+        createdAt:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+        updatedAt:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+      required:
+        - id
+        - name
+        - last4
+        - createdAt
     user:
       type: object
       properties:
@@ -1737,33 +1834,6 @@ components:
           format: password
           minLength: 12
           description: The new password the user wants to set.
-    api-key:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        last4:
-          type: string
-        lastUsedAt:
-          type: integer
-          format: int64
-        createdAt:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-        updatedAt:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-      required:
-        - id
-        - name
-        - last4
-        - createdAt
     api-key-create:
       type: object
       required:
@@ -1919,6 +1989,34 @@ components:
         description:
           type: string
           example: Create a new homepage using React
+    metrics-time-day:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: Total time tracked in milliseconds
+          example: 28800000
+        range:
+          type: object
+          description: Time window the metric covers
+          properties:
+            start:
+              type: integer
+              format: int64
+              example: 1747411200000
+              description: Start of the time window in UNIX milliseconds
+            end:
+              type: integer
+              format: int64
+              example: 1747497599999
+              description: End of the time window in UNIX milliseconds
+            label:
+              type: string
+              example: 'Today, 2 Weeks ago, 4 Month ago '
+              description: Human-readable label for the time window
+      required:
+        - total
     project-summary:
       type: object
       properties:
@@ -2021,15 +2119,6 @@ components:
           format: int64
           example: 1714500000000
           description: Total tracked duration in milliseconds, calculated as the difference between end and start.
-        hours:
-          type: integer
-          example: 1
-        minutes:
-          type: integer
-          example: 35
-        seconds:
-          type: integer
-          example: 5
         timeFormatted:
           type: string
           example: 1h 35m 5s
@@ -2370,14 +2459,22 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/message'
-    user-list:
-      description: List of all Users
+    api-key-list:
+      description: List of all API keys
+      type: object
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/user'
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/api-key'
+              lastKey:
+                type: string
+                nullable: true
+                description: Base64-encoded cursor for pagination. Omit if no more results.
     unauthorized:
       description: Unauthorized attempt
       content:
@@ -2390,6 +2487,14 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/message'
+    user-list:
+      description: List of all Users
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/user'
     user-count:
       description: Successfully fetched user count
       content:
@@ -2465,22 +2570,11 @@ components:
                 type: string
                 example: Password reset scheduled
                 description: Password reset scheduled successfully
-    api-key-list:
-      description: List of all API keys
-      type: object
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/api-key'
-              lastKey:
-                type: string
-                nullable: true
-                description: Base64-encoded cursor for pagination. Omit if no more results.
+              expiresAt:
+                type: integer
+                format: int64
+                example: 1712100000000
+                description: Confirms the requested time for reset in UNIX milliseconds
     api-key-created:
       description: API key successfully created
       content:
@@ -2508,7 +2602,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/task'
+            $ref: '#/components/schemas/api-key'
     task-list:
       description: List of all Tasks
       content:
@@ -2547,6 +2641,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/task'
+    metrics-time-200:
+      description: Total tracked time in milliseconds
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/metrics-time-day'
     project-list:
       description: List of all Projects
       content:
@@ -2760,6 +2860,15 @@ components:
       description: The ID of the task
       schema:
         type: string
+    metrics-index:
+      name: index
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+      description: |
+        Number of days ago to query. Use `0` for today, `1` for yesterday, etc.
     project-id:
       name: projectId
       in: path
