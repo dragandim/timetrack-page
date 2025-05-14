@@ -77,9 +77,11 @@ paths:
         '200':
           $ref: '#/components/responses/login-200'
         '400':
-          $ref: '#/components/responses/login-400'
+          $ref: '#/components/responses/bad-request'
         '401':
-          $ref: '#/components/responses/login-401'
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /long/refresh:
     post:
       summary: Rotate long-lived refresh token
@@ -109,9 +111,11 @@ paths:
         '200':
           $ref: '#/components/responses/login-200'
         '400':
-          $ref: '#/components/responses/login-400'
+          $ref: '#/components/responses/bad-request'
         '401':
-          $ref: '#/components/responses/login-401'
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
   /short/refresh:
     post:
       summary: Rotate short-term refresh token
@@ -239,7 +243,7 @@ paths:
         - $ref: '#/components/parameters/user-id'
       responses:
         '200':
-          $ref: '#/components/responses/user'
+          $ref: '#/components/responses/user-200'
         '401':
           $ref: '#/components/responses/unauthorized'
         '404':
@@ -562,53 +566,150 @@ paths:
           $ref: '#/components/responses/not-found'
         '500':
           $ref: '#/components/responses/server-error'
-  /metrics/time/day/{index}:
+  /metrics/time-total/day/{index}:
     get:
       tags:
         - Metrics
       summary: Get total time tracked by day
-      operationId: getTimeTrackedByDay
+      operationId: getTimeTotalDay
       description: |
         Returns the total time tracked across the organization for a specific day, relative to today. Index `0` means today, `1` means yesterday, `2` means two days ago, etc. Requires admin-level authorization.
       parameters:
-        - $ref: '#/components/parameters/metrics-index'
+        - $ref: '#/components/parameters/metrics-index-day'
       responses:
         '200':
-          $ref: '#/components/responses/metrics-time-200'
+          $ref: '#/components/responses/metrics-time-total-day-200'
         '401':
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
-  /metrics/time/week/{index}:
+  /metrics/time-total/week/{index}:
     get:
       tags:
         - Metrics
       summary: Get total time tracked for a specific week
-      operationId: getTimeTrackedWeekByIndex
+      operationId: getTimeTotalWeek
       description: |
         Returns the total time tracked across the organization for a specific week. Index `0` means the current week, `1` means last week, `2` the week before, etc. Each week starts on Monday (ISO 8601). Requires admin-level authorization.
       parameters:
-        - $ref: '#/components/parameters/metrics-index'
+        - $ref: '#/components/parameters/metrics-index-week'
       responses:
         '200':
-          $ref: '#/components/responses/metrics-time-200'
+          $ref: '#/components/responses/metrics-time-total-week-200'
         '401':
           $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
-  /metrics/time/month/{index}:
+  /metrics/time-total/month/{index}:
     get:
       tags:
         - Metrics
       summary: Get total time tracked for a specific month
-      operationId: getTimeTrackedMonthByIndex
+      operationId: getTimeTotalMonth
       description: |
         Returns the total time tracked across the organization for a specific month. Index `0` refers to the current month, `1` to last month, `2` to the month before that, etc. Results are calculated based on full calendar months. Requires admin-level authorization.
       parameters:
-        - $ref: '#/components/parameters/metrics-index'
+        - $ref: '#/components/parameters/metrics-index-month'
       responses:
         '200':
-          $ref: '#/components/responses/metrics-time-200'
+          $ref: '#/components/responses/metrics-time-total-month-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/time-grouped/week/{index}:
+    get:
+      summary: Get grouped time tracked for a week (daily breakdown)
+      description: |
+        Returns a list of total time tracked for each day in the specified week index.
+        The index is a positive number where:
+          - 1 = current week
+          - 2 = previous week
+          - 3 = two weeks ago, etc.
+      tags:
+        - Metrics
+      operationId: getTimeGroupedWeek
+      parameters:
+        - $ref: '#/components/parameters/metrics-index-week'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-time-grouped-week-200'
+        '400':
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/time-grouped/month/{index}:
+    get:
+      tags:
+        - Metrics
+      summary: Get grouped time tracked for a month (daily breakdown)
+      description: |
+        Returns a list of total time tracked for each day in the specified month index.
+        The index is a positive number where:
+          - 1 = current month
+          - 2 = previous month
+          - 3 = two months ago, etc.
+      operationId: getTimeGroupedMonth
+      parameters:
+        - $ref: '#/components/parameters/metrics-index-month'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-time-grouped-month-200'
+        '400':
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/top-activity/day/{index}:
+    get:
+      summary: Get top users, tasks, and projects for a specific day
+      operationId: getTopActivityDay
+      tags:
+        - Metrics
+      parameters:
+        - $ref: '#/components/parameters/metrics-index-day'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-top-activity-200'
+        '400':
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/top-activity/week/{index}:
+    get:
+      summary: Get top users, tasks, and projects for a specific week
+      operationId: getTopActivityWeek
+      tags:
+        - Metrics
+      parameters:
+        - $ref: '#/components/parameters/metrics-index-week'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-top-activity-200'
+        '400':
+          $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /metrics/top-activity/month/{index}:
+    get:
+      summary: Get top users, tasks, and projects for a specific month
+      operationId: getTopActivityMonth
+      tags:
+        - Metrics
+      parameters:
+        - $ref: '#/components/parameters/metrics-index-week'
+      responses:
+        '200':
+          $ref: '#/components/responses/metrics-top-activity-200'
+        '400':
+          $ref: '#/components/responses/bad-request'
         '401':
           $ref: '#/components/responses/unauthorized'
         '500':
@@ -1135,6 +1236,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/task-id'
         - $ref: '#/components/parameters/timetrack-id'
+      requestBody:
+        $ref: '#/components/requestBodies/timetrack-create'
       responses:
         '200':
           $ref: '#/components/responses/timetrack-get'
@@ -1576,7 +1679,7 @@ components:
           format: int64
           example: 1712100000000
           description: Start time of the time track in UNIX milliseconds
-    org:
+    Org:
       type: object
       properties:
         id:
@@ -1703,35 +1806,6 @@ components:
         - name
         - last4
         - createdAt
-    user:
-      type: object
-      properties:
-        id:
-          type: string
-          example: Q2fspaa93Ad
-        firstName:
-          type: string
-          example: Doug
-        lastName:
-          type: string
-          example: John
-        email:
-          type: string
-          format: email
-          example: john.doe@example.com
-        role:
-          type: string
-          example: member
-        createdAt:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-        updatedAt:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
     item-count:
       type: object
       properties:
@@ -1989,7 +2063,7 @@ components:
         description:
           type: string
           example: Create a new homepage using React
-    metrics-time-day:
+    MetricsTimeTotal:
       type: object
       properties:
         total:
@@ -2016,6 +2090,59 @@ components:
               example: 'Today, 2 Weeks ago, 4 Month ago '
               description: Human-readable label for the time window
       required:
+        - total
+    MetricsGroupedTotal:
+      type: object
+      required:
+        - day
+        - total
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2025-05-12'
+        total:
+          type: integer
+          description: Time tracked in milliseconds
+          example: 7200000
+    UserActivity:
+      type: object
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        total:
+          type: integer
+      required:
+        - userId
+        - name
+        - total
+    TaskActivity:
+      type: object
+      properties:
+        taskId:
+          type: string
+        name:
+          type: string
+        total:
+          type: integer
+      required:
+        - taskId
+        - name
+        - total
+    ProjectActivity:
+      type: object
+      properties:
+        projectId:
+          type: string
+        name:
+          type: string
+        total:
+          type: integer
+      required:
+        - projectId
+        - name
         - total
     project-summary:
       type: object
@@ -2373,7 +2500,7 @@ components:
               user:
                 $ref: '#/components/schemas/User'
               org:
-                $ref: '#/components/schemas/org'
+                $ref: '#/components/schemas/Org'
     signup-400:
       description: Bad request (e.g., invalid input)
       content:
@@ -2409,22 +2536,24 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/login'
-    login-400:
-      description: Missing required fields
+    bad-request:
+      description: Bad request
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/message'
-    login-401:
-      description: Unauthorized attempt due to invalid credentials
+    unauthorized:
+      description: Unauthorized attempt
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-                description: Invalid email or password
+            $ref: '#/components/schemas/message'
+    server-error:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/message'
     refresh-200:
       description: Successfully refreshed JWT tokens
       content:
@@ -2475,18 +2604,6 @@ components:
                 type: string
                 nullable: true
                 description: Base64-encoded cursor for pagination. Omit if no more results.
-    unauthorized:
-      description: Unauthorized attempt
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/message'
-    server-error:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/message'
     user-list:
       description: List of all Users
       content:
@@ -2494,7 +2611,7 @@ components:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/user'
+              $ref: '#/components/schemas/User'
     user-count:
       description: Successfully fetched user count
       content:
@@ -2512,19 +2629,13 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/user'
-    bad-request:
-      description: Bad request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/message'
-    user:
+            $ref: '#/components/schemas/User'
+    user-200:
       description: A single User object
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/user'
+            $ref: '#/components/schemas/User'
     not-found:
       description: Item not found
       content:
@@ -2536,7 +2647,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/user'
+            $ref: '#/components/schemas/User'
     item-deleted:
       description: Item deleted
       content:
@@ -2641,12 +2752,63 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/task'
-    metrics-time-200:
+    metrics-time-total-day-200:
       description: Total tracked time in milliseconds
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/metrics-time-day'
+            $ref: '#/components/schemas/MetricsTimeTotal'
+    metrics-time-total-week-200:
+      description: Total tracked time in milliseconds
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MetricsTimeTotal'
+    metrics-time-total-month-200:
+      description: Total tracked time in milliseconds
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MetricsTimeTotal'
+    metrics-time-grouped-week-200:
+      description: Daily totals for the given week
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/MetricsGroupedTotal'
+    metrics-time-grouped-month-200:
+      description: Daily totals for the given month
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/MetricsGroupedTotal'
+    metrics-top-activity-200:
+      description: Top users, tasks, and projects ranked by total time tracked
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              users:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserActivity'
+              tasks:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskActivity'
+              projects:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectActivity'
+            required:
+              - topUsers
+              - topTasks
+              - topProjects
     project-list:
       description: List of all Projects
       content:
@@ -2814,13 +2976,13 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/org'
+            $ref: '#/components/schemas/Org'
     org-updated:
       description: Successfully updated Organisation
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/org'
+            $ref: '#/components/schemas/Org'
   parameters:
     limit:
       name: limit
@@ -2860,7 +3022,7 @@ components:
       description: The ID of the task
       schema:
         type: string
-    metrics-index:
+    metrics-index-day:
       name: index
       in: path
       required: true
@@ -2869,6 +3031,24 @@ components:
         minimum: 0
       description: |
         Number of days ago to query. Use `0` for today, `1` for yesterday, etc.
+    metrics-index-week:
+      name: index
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+      description: |
+        Number of weeks ago to query. Use `1` for the current week, `2` for the previous week, `3` for two weeks ago, etc.
+    metrics-index-month:
+      name: index
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+      description: |
+        Number of months ago to query. Use `1` for the current month, `2` for the previous month, `3` for two months ago, etc.
     project-id:
       name: projectId
       in: path
