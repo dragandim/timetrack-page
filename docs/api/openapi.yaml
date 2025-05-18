@@ -136,7 +136,7 @@ paths:
       summary: List all active sessions for the organisation
       description: |
         Retrieves all active sessions (access and refresh tokens) created by users within the authenticated organisation. This endpoint is typically used by administrators to monitor or audit user sessions across the entire team. Requires a valid access token with administrative privileges.
-      operationId: getOrgSessions
+      operationId: getSessions
       security:
         - bearerAuth: []
       tags:
@@ -150,7 +150,7 @@ paths:
     get:
       summary: List all API keys for organisations
       description: Retrieves all API keys owned by organisation
-      operationId: getOrgApiKeys
+      operationId: getApiKeys
       security:
         - bearerAuth: []
       tags:
@@ -324,7 +324,7 @@ paths:
     get:
       summary: Get all API keys for user
       description: Retrieves all API keys owned by user
-      operationId: getAllApiKeys
+      operationId: getUserApiKeys
       security:
         - bearerAuth: []
       tags:
@@ -532,57 +532,6 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '404':
           $ref: '#/components/responses/not-found'
-        '500':
-          $ref: '#/components/responses/server-error'
-  /users/overview:
-    get:
-      summary: Get an overview of users
-      description: Returns a high-level summary of users in the organization. Supports pagination.
-      operationId: getUsersOverview
-      tags:
-        - Overview
-      parameters:
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/last-key'
-      responses:
-        '200':
-          $ref: '#/components/responses/users-overview-200'
-        '401':
-          $ref: '#/components/responses/unauthorized'
-        '500':
-          $ref: '#/components/responses/server-error'
-  /tasks/overview:
-    get:
-      summary: Get an overview of tasks
-      description: Returns a high-level summary of tasks in the organization. Supports pagination.
-      operationId: getTasksOverview
-      tags:
-        - Overview
-      parameters:
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/last-key'
-      responses:
-        '200':
-          $ref: '#/components/responses/tasks-overview-200'
-        '401':
-          $ref: '#/components/responses/unauthorized'
-        '500':
-          $ref: '#/components/responses/server-error'
-  /projects/overview:
-    get:
-      summary: Get an overview of projects
-      description: Returns a high-level summary of projects in the organization. Supports pagination.
-      operationId: getProjectsOverview
-      tags:
-        - Overview
-      parameters:
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/last-key'
-      responses:
-        '200':
-          $ref: '#/components/responses/projects-overview-200'
-        '401':
-          $ref: '#/components/responses/unauthorized'
         '500':
           $ref: '#/components/responses/server-error'
   /projects:
@@ -836,14 +785,14 @@ paths:
           $ref: '#/components/responses/server-error'
   /metrics/time-total/day/{index}:
     get:
-      tags:
-        - Metrics
       summary: Get total time tracked by day
       operationId: getMetricsTimeTotalDay
       description: |
         Returns the total time tracked across the organization for a specific day, relative to today. Index `0` means today, `1` means yesterday, `2` means two days ago, etc. Requires admin-level authorization.
+      tags:
+        - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-day'
+        - $ref: '#/components/parameters/index-day'
       responses:
         '200':
           $ref: '#/components/responses/metrics-time-total-day-200'
@@ -853,14 +802,14 @@ paths:
           $ref: '#/components/responses/server-error'
   /metrics/time-total/week/{index}:
     get:
-      tags:
-        - Metrics
       summary: Get total time tracked for a specific week
       operationId: getMetricsTimeTotalWeek
       description: |
         Returns the total time tracked across the organization for a specific week. Index `0` means the current week, `1` means last week, `2` the week before, etc. Each week starts on Monday (ISO 8601). Requires admin-level authorization.
+      tags:
+        - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-week'
+        - $ref: '#/components/parameters/index-week'
       responses:
         '200':
           $ref: '#/components/responses/metrics-time-total-week-200'
@@ -870,14 +819,14 @@ paths:
           $ref: '#/components/responses/server-error'
   /metrics/time-total/month/{index}:
     get:
-      tags:
-        - Metrics
       summary: Get total time tracked for a specific month
       operationId: getMetricsTimeTotalMonth
       description: |
         Returns the total time tracked across the organization for a specific month. Index `0` refers to the current month, `1` to last month, `2` to the month before that, etc. Results are calculated based on full calendar months. Requires admin-level authorization.
+      tags:
+        - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-month'
+        - $ref: '#/components/parameters/index-month'
       responses:
         '200':
           $ref: '#/components/responses/metrics-time-total-month-200'
@@ -898,7 +847,7 @@ paths:
       tags:
         - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-week'
+        - $ref: '#/components/parameters/index-week'
       responses:
         '200':
           $ref: '#/components/responses/metrics-time-grouped-week-200'
@@ -910,8 +859,6 @@ paths:
           $ref: '#/components/responses/server-error'
   /metrics/time-grouped/month/{index}:
     get:
-      tags:
-        - Metrics
       summary: Get grouped time tracked for a month (daily breakdown)
       description: |
         Returns a list of total time tracked for each day in the specified month index.
@@ -920,8 +867,10 @@ paths:
           - 2 = previous month
           - 3 = two months ago, etc.
       operationId: getMetricsTimeGroupedMonth
+      tags:
+        - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-month'
+        - $ref: '#/components/parameters/index-month'
       responses:
         '200':
           $ref: '#/components/responses/metrics-time-grouped-month-200'
@@ -938,7 +887,7 @@ paths:
       tags:
         - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-day'
+        - $ref: '#/components/parameters/index-day'
       responses:
         '200':
           $ref: '#/components/responses/metrics-top-activity-200'
@@ -955,7 +904,7 @@ paths:
       tags:
         - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-week'
+        - $ref: '#/components/parameters/index-week'
       responses:
         '200':
           $ref: '#/components/responses/metrics-top-activity-200'
@@ -972,12 +921,156 @@ paths:
       tags:
         - Metrics
       parameters:
-        - $ref: '#/components/parameters/metrics-index-week'
+        - $ref: '#/components/parameters/index-week'
       responses:
         '200':
           $ref: '#/components/responses/metrics-top-activity-200'
         '400':
           $ref: '#/components/responses/bad-request'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/user/day/{index}:
+    get:
+      summary: Get an overview of users by day
+      description: Returns a high-level overview of users in the organization. Supports pagination.
+      operationId: getOverviewUserByDay
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-day'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-user-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/user/week/{index}:
+    get:
+      summary: Get an overview of users by week
+      description: Returns a high-level overview of users in the organization. Supports pagination.
+      operationId: getOverviewUserByWeek
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-week'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-user-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/user/month/{index}:
+    get:
+      summary: Get an overview of users by month
+      description: Returns a high-level overview of users in the organization. Supports pagination.
+      operationId: getOverviewUserByMonth
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-month'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-user-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/task/day/{index}:
+    get:
+      summary: Get an overview of tasks by day
+      description: Returns a high-level overview of tasks in the organization. Supports pagination.
+      operationId: getOverviewTaskByDay
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-day'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-task-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/task/week/{index}:
+    get:
+      summary: Get an overview of tasks by week
+      description: Returns a high-level overview of tasks in the organization. Supports pagination.
+      operationId: getOverviewTaskByWeek
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-week'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-task-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/task/month/{index}:
+    get:
+      summary: Get an overview of tasks by month
+      description: Returns a high-level overview of tasks in the organization. Supports pagination.
+      operationId: getOverviewTaskByMonth
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-month'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-task-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/project/day/{index}:
+    get:
+      summary: Get an overview of projects by day
+      description: Returns a high-level overview of projects in the organization. Supports pagination.
+      operationId: getOverviewProjectByDay
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-day'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-project-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/project/week/{index}:
+    get:
+      summary: Get an overview of projects by week
+      description: Returns a high-level overview of projects in the organization. Supports pagination.
+      operationId: getOverviewProjectByWeek
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-day'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-project-200'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '500':
+          $ref: '#/components/responses/server-error'
+  /overview/project/month/{index}:
+    get:
+      summary: Get an overview of projects by month
+      description: Returns a high-level overview of projects in the organization. Supports pagination.
+      operationId: getOverviewProjectByMonth
+      tags:
+        - Overview
+      parameters:
+        - $ref: '#/components/parameters/index-day'
+      responses:
+        '200':
+          $ref: '#/components/responses/overview-project-200'
         '401':
           $ref: '#/components/responses/unauthorized'
         '500':
@@ -1543,7 +1636,7 @@ components:
             example: "contact@visidra.com"
         createdAt:
           type: integer
-          format: int64
+          format: intxx2 64
           example: 1712100000000
           description: Start time of the time track in UNIX milliseconds
         updatedAt:
@@ -1551,6 +1644,11 @@ components:
           format: int64
           example: 1712100000000
           description: Start time of the time track in UNIX milliseconds
+      required:
+        - id
+        - name
+        - updatedAt
+        - createdAt
     Signup:
       type: object
       properties:
@@ -1626,7 +1724,11 @@ components:
           type: integer
           format: int64
           example: 1714500000000
-        expiresAt:
+        accessExpiresAt:
+          type: integer
+          format: int64
+          example: 1714586400000
+        refreshExpiresAt:
           type: integer
           format: int64
           example: 1714586400000
@@ -1673,13 +1775,14 @@ components:
           description: Token to fetch the next page of results
       required:
         - items
-    item-count:
-      ItemCount:
-        type: object
-        properties:
-          count:
-            type: integer
-            example: 29
+    ItemCount:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 29
+      required:
+        - count
     UserCreateParam:
       type: object
       required:
@@ -1817,7 +1920,6 @@ components:
           description: The status shows stask activity
         projectId:
           type: string
-          readOnly: true
           nullable: false
           description: |
             The ID of the project this task belongs to, if any. Omitted when the task is not assigned to a project.
@@ -1867,54 +1969,6 @@ components:
         description:
           type: string
           example: Create a new homepage using React
-    UserOverview:
-      type: object
-      properties:
-        id:
-          type: string
-        email:
-          type: string
-        firstName:
-          type: string
-        lastName:
-          type: string
-        total:
-          type: integer
-          description: Total time tracked by the user in milliseconds
-        totalFormatted:
-          type: string
-          example: 1h 35m 5s
-          description: Human-readable version of the tracked duration, derived from the total field.
-        projectsInvolved:
-          type: integer
-          description: Number of projects the user has contributed to
-        lastSessionAt:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-      required:
-        - id
-        - email
-        - firstName
-        - lastName
-        - total
-        - totalFormatted
-        - projectsInvolved
-        - lastSessionAt
-    overview-user-list:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserOverview'
-        lastKey:
-          type: string
-          nullable: true
-          description: Token to fetch the next page of results
-      required:
-        - items
     Project:
       type: object
       properties:
@@ -1945,116 +1999,6 @@ components:
           format: int64
           example: 1712100000000
           description: Start time of the time track in UNIX milliseconds
-    TaskOverview:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        projectId:
-          type: string
-        project:
-          $ref: '#/components/schemas/Project'
-        total:
-          type: integer
-          description: Total time tracked for this task in milliseconds
-        totalFormatted:
-          type: string
-          example: 1h 35m 5s
-          description: Human-readable version of the tracked duration, derived from the total field.
-        entryCount:
-          type: integer
-          description: Number of time tracking records
-        userCount:
-          type: integer
-          description: Number of users who contributed time to this task
-        firstEntry:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-        lastEntry:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-      required:
-        - id
-        - name
-        - projectId
-        - total
-        - entryCount
-        - userCount
-        - firstEntry
-        - lastEntry
-    overview-task-list:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/TaskOverview'
-        lastKey:
-          type: string
-          nullable: true
-          description: Token to fetch the next page of results
-      required:
-        - items
-    ProjectOverview:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        externalId:
-          type: string
-        total:
-          type: number
-        totalFormatted:
-          type: string
-          example: 1h 35m 5s
-          description: Human-readable version of the tracked duration, derived from the total field.
-        taskCount:
-          type: integer
-          description: Number of tasks in this project
-        userCount:
-          type: integer
-          description: Number of users who contributed to this project
-        firstEntry:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-        lastEntry:
-          type: integer
-          format: int64
-          example: 1712100000000
-          description: Start time of the time track in UNIX milliseconds
-      required:
-        - id
-        - name
-        - externalId
-        - total
-        - totalformatted
-        - taskCount
-        - userCount
-        - firstEntry
-        - lastEntry
-    overview-project-list:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProjectOverview'
-        lastKey:
-          type: string
-          nullable: true
-          description: Token to fetch the next page of results
-      required:
-        - items
     Projects:
       type: object
       properties:
@@ -2068,12 +2012,6 @@ components:
           description: Token to fetch the next page of results
       required:
         - items
-    ItemCount:
-      type: object
-      properties:
-        count:
-          type: integer
-          example: 29
     ProjectCreateParam:
       type: object
       required:
@@ -2188,6 +2126,203 @@ components:
         - projectId
         - name
         - total
+    UserOverviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        total:
+          type: integer
+          description: Total time tracked by the user in milliseconds
+        totalFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the total field.
+        projectsInvolved:
+          type: integer
+          description: Number of projects the user has contributed to
+        lastSessionAt:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - total
+        - totalFormatted
+        - projectsInvolved
+        - lastSessionAt
+    UserOverview:
+      type: object
+      properties:
+        label:
+          type: string
+          example: day, week or month
+          description: It can be either day, week or month
+        start:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the range in UNIX milliseconds
+        end:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the range in UNIX milliseconds
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserOverviewItem'
+      required:
+        - label
+        - start
+        - end
+        - items
+    TaskOverviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        projectId:
+          type: string
+        project:
+          $ref: '#/components/schemas/Project'
+        total:
+          type: integer
+          description: Total time tracked for this task in milliseconds
+        totalFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the total field.
+        trackCount:
+          type: integer
+          description: Number of time tracking records
+        userCount:
+          type: integer
+          description: Number of users who contributed time to this task
+        firstEntry:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+        lastEntry:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+      required:
+        - id
+        - name
+        - totalFormatted
+        - total
+        - trackCount
+        - userCount
+        - firstEntry
+        - lastEntry
+    TaskOverview:
+      type: object
+      properties:
+        label:
+          type: string
+          example: day, week or month
+          description: It can be either day, week or month
+        start:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the range in UNIX milliseconds
+        end:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the range in UNIX milliseconds
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskOverviewItem'
+      required:
+        - label
+        - start
+        - end
+        - items
+    ProjectOverviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        externalId:
+          type: string
+        total:
+          type: number
+        totalFormatted:
+          type: string
+          example: 1h 35m 5s
+          description: Human-readable version of the tracked duration, derived from the total field.
+        taskCount:
+          type: integer
+          description: Number of tasks in this project
+        userCount:
+          type: integer
+          description: Number of users who contributed to this project
+        firstEntry:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+        lastEntry:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the time track in UNIX milliseconds
+      required:
+        - id
+        - name
+        - externalId
+        - total
+        - totalformatted
+        - taskCount
+        - userCount
+        - firstEntry
+        - lastEntry
+    ProjectOverview:
+      type: object
+      properties:
+        label:
+          type: string
+          example: day, week or month
+          description: It can be either day, week or month
+        start:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the range in UNIX milliseconds
+        end:
+          type: integer
+          format: int64
+          example: 1712100000000
+          description: Start time of the range in UNIX milliseconds
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectOverviewItem'
+      required:
+        - label
+        - start
+        - end
+        - items
     TimeTrack:
       type: object
       properties:
@@ -2729,7 +2864,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/item-count'
+            $ref: '#/components/schemas/ItemCount'
     user-created:
       description: Successfully created User
       content:
@@ -2816,7 +2951,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/item-count'
+            $ref: '#/components/schemas/ItemCount'
     task-created:
       description: Successfully created Task
       content:
@@ -2835,24 +2970,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Task'
-    users-overview-200:
-      description: A list of user summaries with pagination support
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/overview-user-list'
-    tasks-overview-200:
-      description: A list of task summaries with pagination support
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/overview-task-list'
-    projects-overview-200:
-      description: A list of project summaries with pagination support
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/overview-project-list'
     project-list:
       description: List of all Projects
       content:
@@ -2940,6 +3057,26 @@ components:
               - topUsers
               - topTasks
               - topProjects
+    overview-user-200:
+      description: A list of user summaries with pagination support
+      content:
+        application/json:
+          schema:
+            items:
+              $ref: '#/components/schemas/UserOverview'
+    overview-task-200:
+      description: A list of task overviews
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskOverview'
+    overview-project-200:
+      description: A list of project summaries with pagination support
+      content:
+        application/json:
+          schema:
+            items:
+              $ref: '#/components/schemas/ProjectOverview'
     report-task-timetrack:
       description: Successful Task Report
       content:
@@ -3023,7 +3160,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/item-count'
+            $ref: '#/components/schemas/ItemCount'
     invitation-list:
       description: List of all invitations
       type: object
@@ -3102,23 +3239,6 @@ components:
       description: The ID of the task
       schema:
         type: string
-    limit:
-      name: limit
-      in: query
-      description: Maximum number of users to include in the summary.
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 100
-        default: 20
-    last-key:
-      name: lastKey
-      in: query
-      description: Pagination token to fetch the next set of results.
-      required: false
-      schema:
-        type: string
     project-id:
       name: projectId
       in: path
@@ -3126,7 +3246,7 @@ components:
       description: ID of the Project
       schema:
         type: string
-    metrics-index-day:
+    index-day:
       name: index
       in: path
       required: true
@@ -3135,7 +3255,7 @@ components:
         minimum: 0
       description: |
         Number of days ago to query. Use `0` for today, `1` for yesterday, etc.
-    metrics-index-week:
+    index-week:
       name: index
       in: path
       required: true
@@ -3144,7 +3264,7 @@ components:
         minimum: 0
       description: |
         Number of weeks ago to query. Use `1` for the current week, `2` for the previous week, `3` for two weeks ago, etc.
-    metrics-index-month:
+    index-month:
       name: index
       in: path
       required: true
